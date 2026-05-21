@@ -1,0 +1,27 @@
+{
+  "name": "Purple GEO",
+  "version": "1.0.0",
+  "author": "GitHub CMS",
+  "price": "$29",
+  "description": "Полный GEO-оптимизированный дизайн для коммерческих сайтов. Фиолетовая гамма с градиентами, карточки с тенями, Plob-стилистика. Включает 24-блочный промпт для генерации экспертных статей с E-E-A-T сигналами.",
+  "features": [
+    "Полный CSS-дизайн (не только цвета) — шрифты, тени, анимации, отступы",
+    "Адаптивная темная тема",
+    "Plob-стилистика: градиенты, карточки с тенями, скругления",
+    "24-блочный GEO-промпт для генерации статей",
+    "Промпт-шаблоны с персональными стилями шаблона",
+    "Совместимость с Bootstrap 5 grid",
+    "Печатная вёрстка",
+    "Поддержка high-contrast режима"
+  ],
+  "preview": "https://pixinlink.ru/api/v1/800x500/modern-purple-website-template-preview",
+  "entry": "themes/purple-geo/theme.scss",
+  "replaces": [
+    "themes/purple/variables.scss"
+  ],
+  "prompts": [
+    "article-geo-24.md",
+    "article-seo-geo.md",
+    "ai-instructions.md"
+  ]
+}

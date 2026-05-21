@@ -1,0 +1,16 @@
+/* ═══════════════════════════════
+   GitHub CMS — Main Stylesheet
+   Switch themes by changing one line below.
+   Available themes in src/assets/themes/
+   ═══════════════════════════════ */
+
+/* Code highlighting (applies to all themes) */
+@import "highlight.js/styles/github.css";
+
+/* === ACTIVE THEME === */
+@import "themes/purple-geo-lite/theme.scss";
+
+/* To switch themes, replace the line above with:
+   @import "themes/purple-geo/theme.scss";
+   @import "print";  (only needed for default/variables themes)
+*/

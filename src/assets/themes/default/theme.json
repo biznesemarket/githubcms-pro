@@ -1,0 +1,8 @@
+{
+  "name": "Default Blue",
+  "version": "1.0",
+  "author": "GitHub CMS",
+  "description": "The default blue theme — clean, professional, works everywhere.",
+  "preview": "https://pixinlink.ru/api/v1/800x450/clean-blue-website-theme",
+  "entry": "themes/default/variables.scss"
+}

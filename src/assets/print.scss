@@ -1,0 +1,38 @@
+@media print {
+  .app-navbar,
+  .app-footer,
+  .breadcrumbs,
+  .toc,
+  .back-to-top,
+  .page-banner,
+  .block-cta,
+  .block-faq .app-accordion-trigger {
+    display: none !important;
+  }
+
+  .block-answer {
+    background: none !important;
+    border: 2px solid #000;
+    color: #000;
+  }
+
+  .block-cta {
+    background: none !important;
+    border: 2px solid #000;
+    color: #000;
+  }
+
+  body {
+    background: #fff;
+    color: #000;
+    font-size: 12pt;
+  }
+
+  a {
+    color: #000;
+  }
+
+  .page {
+    max-width: 100%;
+  }
+}
