@@ -1,0 +1,88 @@
+# Site tree configuration — single source of truth for menu structure.
+# Folder order here = order in navigation menu.
+# Each entry must have a corresponding folder under content/{locale}/.
+
+order:
+  - id: home
+    path: /
+    title:
+      ru: Главная
+      en: Home
+    dropdown: true
+
+  - id: about
+    path: /about/
+    title:
+      ru: О компании
+      en: About
+    dropdown: true
+
+  - id: section-geo
+    path: /section-geo/
+    title:
+      ru: GEO / AI-видимость
+      en: GEO / AI Visibility
+    dropdown: true
+
+  - id: section-devops
+    path: /section-devops/
+    title:
+      ru: DevOps / Деплой
+      en: DevOps / Deploy
+    dropdown: true
+
+  - id: section-content
+    path: /section-content/
+    title:
+      ru: Контент / Markdown
+      en: Content / Markdown
+    dropdown: true
+
+  - id: shop
+    path: /shop/
+    title:
+      ru: Магазин
+      en: Shop
+    dropdown: true
+
+  - id: blog
+    path: /blog/
+    title:
+      ru: Блог
+      en: Blog
+    dropdown: false
+
+  - id: contact
+    path: /contact/
+    title:
+      ru: Контакты
+      en: Contact
+    dropdown: false
+
+  - id: templates
+    path: /templates/
+    title:
+      ru: Шаблоны
+      en: Templates
+    dropdown: false
+
+# Slugs to exclude from routing (content blocks, not standalone pages)
+skipSlugs:
+  - blog-hero
+
+# Organization data for JSON-LD schema (moved from hardcoded source files).
+# Override via env vars: ORG_NAME, ORG_LEGAL_NAME, ORG_INN, ORG_KPP, ORG_ADDRESS,
+# ORG_PHONE, ORG_EMAIL, ORG_PRICE_RANGE, ORG_CURRENCY, ORG_PAYMENT, ORG_AREA_SERVED.
+org:
+  name: ООО «ФОНИИ»
+  legalName: ООО «ФОНИИ»
+  foundingDate: "2025"
+  inn: "7720943604"
+  kpp: "772001001"
+  address: "111141, г. Москва, пр-кт Зелёный, д 3а, стр. 1"
+  phone: "+7 (495) 324-30-88"
+  email: "info@fonai.ru"
+  priceRange: от 0 до 49000 ₽
+  currenciesAccepted: RUB
+  paymentAccepted: Online
+  areaServed: Россия, СНГ
