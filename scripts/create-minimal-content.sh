@@ -65,6 +65,38 @@ ARTICLE
     done
   fi
 
+  if [ ! -f "$BLOG_DIR/blog-hero.md" ]; then
+    if [ "$locale" = "ru" ]; then
+      HERO_TITLE="Блог GitHub CMS — ${LABEL}"
+      HERO_DESC="Демонстрационные статьи о статических сайтах, SEO и деплое."
+    else
+      HERO_TITLE="GitHub CMS Blog — ${LABEL}"
+      HERO_DESC="Demo articles about static sites, SEO, and deployment."
+    fi
+    cat > "$BLOG_DIR/blog-hero.md" <<HERO
+---
+title: "${HERO_TITLE}"
+description: "${HERO_DESC}"
+slug: "blog-hero"
+date: "${TODAY}"
+author: "GitHub CMS ${LABEL}"
+layout: "page"
+schema_type: "WebSite"
+raw_html: true
+---
+
+<section class="blog-hero">
+  <div class="blog-hero-inner">
+    <div class="blog-hero-text">
+      <p class="blog-hero-badge">Magazine</p>
+      <h1 class="blog-hero-title">${HERO_TITLE}</h1>
+      <p class="blog-hero-desc">${HERO_DESC}</p>
+    </div>
+  </div>
+</section>
+HERO
+  fi
+
   if [ ! -f "$PAGES_DIR/about.md" ]; then
     cat > "$PAGES_DIR/about.md" <<PAGE
 ---
