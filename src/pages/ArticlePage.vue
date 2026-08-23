@@ -75,18 +75,17 @@ useSeo(() => {
 
 const blocks = computed(() => article.value?.blocks ?? {});
 
-const blockOrder = ["hero", "answer-first", "key-facts", "featured-snippet", "faq", "cta", "schema-hints"];
-
+// Render blocks in source order (by `position`). `schema-hints` is non-visual.
 const orderedBlocks = computed(() => {
-  return blockOrder.filter((name) => name in blocks.value).map((name) => ({
-    name,
-    html: blocks.value[name],
-  }));
+  return Object.entries(blocks.value)
+    .filter(([name]) => name !== "schema-hints")
+    .map(([name, block]) => ({ name, html: block.html, position: block.position }))
+    .sort((a, b) => a.position - b.position);
 });
 
 const breadcrumbItems = computed(() => {
   if (!article.value) return [];
-  const items = [
+  const items: { name: string; url?: string }[] = [
     { name: t.breadcrumb.homeCap, url: "/" },
     { name: t.breadcrumb.blog, url: "/blog/" },
   ];
@@ -94,17 +93,41 @@ const breadcrumbItems = computed(() => {
   if (cat) {
     items.push({ name: cat, url: `/category/${slugify(cat)}/` });
   }
-  items.push({ name: article.value.frontmatter.title, url: "" });
+  items.push({ name: article.value.frontmatter.title });
   return items;
 });
 
+// TOC is built from the ASSEMBLED page: body + blocks in source order, so
+// fully-blocked articles (empty body) keep their table of contents.
 const processedHtml = computed(() => {
   if (!article.value) return { html: "", toc: [] as ReturnType<typeof processHeadings>["toc"] };
-  return processHeadings(article.value.html);
+  const body = processHeadings(article.value.html);
+  const toc = [...body.toc];
+  for (const block of orderedBlocks.value) {
+    const blockResult = processHeadings(block.html);
+    toc.push(...blockResult.toc);
+  }
+  return { html: body.html, toc };
 });
 
 const htmlWithIds = computed(() => processedHtml.value.html);
 const tocItems = computed(() => processedHtml.value.toc);
+
+// Block HTML with heading IDs applied (anchors match TOC entries).
+const blockHtmlWithIds = computed(() => {
+  const map: Record<string, string> = {};
+  for (const block of orderedBlocks.value) {
+    map[block.name] = processHeadings(block.html).html;
+  }
+  return map;
+});
+
+const articleImage = computed(() => {
+  if (!article.value) return "";
+  const fm = article.value.frontmatter;
+  const legacyImage = (fm as { image?: string }).image;
+  return fm.cover_image || legacyImage || `https://pixinlink.ru/api/v1/600x400/${encodeURIComponent(fm.slug || "")}`;
+});
 </script>
 
 <template>
@@ -142,14 +165,22 @@ const tocItems = computed(() => processedHtml.value.toc);
         >{{ tag }}</RouterLink>
       </div>
 
-      <nav v-if="tocItems.length > 0" class="toc">
-        <h2>{{ t.article.tableOfContents }}</h2>
-        <ul>
-          <li v-for="item in tocItems" :key="item.id" :class="`toc-level-${item.level}`">
-            <a :href="`#${item.id}`">{{ item.text }}</a>
-          </li>
-        </ul>
-      </nav>
+      <div class="toc-row" v-if="tocItems.length > 0">
+        <nav class="toc">
+          <h2>{{ t.article.tableOfContents }}</h2>
+          <ul>
+            <li v-for="item in tocItems" :key="item.id" :class="`toc-level-${item.level}`">
+              <a :href="`#${item.id}`">{{ item.text }}</a>
+            </li>
+          </ul>
+        </nav>
+        <img
+          :src="articleImage"
+          :alt="article.frontmatter.title"
+          class="toc-image"
+          loading="lazy"
+        >
+      </div>
 
       <article class="article">
         <div v-html="htmlWithIds"></div>
@@ -157,11 +188,11 @@ const tocItems = computed(() => processedHtml.value.toc);
 
       <template v-for="block in orderedBlocks" :key="block.name">
         <section v-if="block.name === 'answer-first'" class="block block-answer">
-          <div class="block-answer-inner" v-html="block.html"></div>
+          <div class="block-answer-inner" v-html="blockHtmlWithIds[block.name]"></div>
         </section>
 
         <section v-else-if="block.name === 'key-facts'" class="block block-facts">
-          <div v-html="block.html"></div>
+          <div v-html="blockHtmlWithIds[block.name]"></div>
         </section>
 
         <section v-else-if="block.name === 'faq'" class="block block-faq">
@@ -182,15 +213,15 @@ const tocItems = computed(() => processedHtml.value.toc);
         </section>
 
         <section v-else-if="block.name === 'cta'" class="block block-cta">
-          <div v-html="block.html"></div>
+          <div v-html="blockHtmlWithIds[block.name]"></div>
         </section>
 
         <section v-else-if="block.name === 'hero'" class="block block-hero">
-          <div v-html="block.html"></div>
+          <div v-html="blockHtmlWithIds[block.name]"></div>
         </section>
 
         <section v-else class="block">
-          <div v-html="block.html"></div>
+          <div v-html="blockHtmlWithIds[block.name]"></div>
         </section>
       </template>
 
@@ -368,6 +399,26 @@ const tocItems = computed(() => processedHtml.value.toc);
 .article :deep(img) {
   height: auto;
   max-width: 100%;
+}
+
+.toc-row {
+  display: flex;
+  gap: 20px;
+  margin-bottom: 32px;
+}
+
+.toc-row .toc {
+  flex: 1;
+  margin-bottom: 0;
+}
+
+.toc-image {
+  border-radius: 8px;
+  flex: 1;
+  height: 400px;
+  object-fit: cover;
+  width: 600px;
+  max-width: 50%;
 }
 
 .toc {

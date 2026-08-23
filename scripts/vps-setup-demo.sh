@@ -21,6 +21,13 @@ server {
     root /var/www/github-cms-free/ru;
     index index.html;
 
+    # Security headers (mirrors deploy/nginx/githubcms.conf.example — keep in sync)
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header X-Frame-Options "SAMEORIGIN" always;
+    add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+    add_header Permissions-Policy "geolocation=(), microphone=(), camera=()" always;
+    add_header Content-Security-Policy "default-src 'self'; img-src 'self' https: data:; script-src 'self' https://*.tbank.ru https://*.tinkoff.ru https://*.tcsbank.ru https://*.nspk.ru https://*.t-static.ru; style-src 'self' 'unsafe-inline' https://*.tbank.ru https://*.tinkoff.ru; connect-src 'self' https: https://*.tbank.ru https://*.tinkoff.ru https://*.tcsbank.ru https://*.nspk.ru https://*.t-static.ru; font-src 'self' data:; frame-ancestors 'self'; base-uri 'self'; form-action 'self'" always;
+
     location / {
         try_files $uri $uri/ /index.html;
     }
@@ -43,6 +50,13 @@ server {
     server_name demofree.githubcms.com;
     root /var/www/github-cms-free/en;
     index index.html;
+
+    # Security headers (mirrors deploy/nginx/githubcms.conf.example — keep in sync)
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header X-Frame-Options "SAMEORIGIN" always;
+    add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+    add_header Permissions-Policy "geolocation=(), microphone=(), camera=()" always;
+    add_header Content-Security-Policy "default-src 'self'; img-src 'self' https: data:; script-src 'self' https://*.tbank.ru https://*.tinkoff.ru https://*.tcsbank.ru https://*.nspk.ru https://*.t-static.ru; style-src 'self' 'unsafe-inline' https://*.tbank.ru https://*.tinkoff.ru; connect-src 'self' https: https://*.tbank.ru https://*.tinkoff.ru https://*.tcsbank.ru https://*.nspk.ru https://*.t-static.ru; font-src 'self' data:; frame-ancestors 'self'; base-uri 'self'; form-action 'self'" always;
 
     location / {
         try_files $uri $uri/ /index.html;
@@ -67,6 +81,13 @@ server {
     root /var/www/github-cms-pro/ru;
     index index.html;
 
+    # Security headers (mirrors deploy/nginx/githubcms.conf.example — keep in sync)
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header X-Frame-Options "SAMEORIGIN" always;
+    add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+    add_header Permissions-Policy "geolocation=(), microphone=(), camera=()" always;
+    add_header Content-Security-Policy "default-src 'self'; img-src 'self' https: data:; script-src 'self' https://*.tbank.ru https://*.tinkoff.ru https://*.tcsbank.ru https://*.nspk.ru https://*.t-static.ru; style-src 'self' 'unsafe-inline' https://*.tbank.ru https://*.tinkoff.ru; connect-src 'self' https: https://*.tbank.ru https://*.tinkoff.ru https://*.tcsbank.ru https://*.nspk.ru https://*.t-static.ru; font-src 'self' data:; frame-ancestors 'self'; base-uri 'self'; form-action 'self'" always;
+
     location / {
         try_files $uri $uri/ /index.html;
     }
@@ -89,6 +110,13 @@ server {
     server_name demopro.githubcms.com;
     root /var/www/github-cms-pro/en;
     index index.html;
+
+    # Security headers (mirrors deploy/nginx/githubcms.conf.example — keep in sync)
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header X-Frame-Options "SAMEORIGIN" always;
+    add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+    add_header Permissions-Policy "geolocation=(), microphone=(), camera=()" always;
+    add_header Content-Security-Policy "default-src 'self'; img-src 'self' https: data:; script-src 'self' https://*.tbank.ru https://*.tinkoff.ru https://*.tcsbank.ru https://*.nspk.ru https://*.t-static.ru; style-src 'self' 'unsafe-inline' https://*.tbank.ru https://*.tinkoff.ru; connect-src 'self' https: https://*.tbank.ru https://*.tinkoff.ru https://*.tcsbank.ru https://*.nspk.ru https://*.t-static.ru; font-src 'self' data:; frame-ancestors 'self'; base-uri 'self'; form-action 'self'" always;
 
     location / {
         try_files $uri $uri/ /index.html;

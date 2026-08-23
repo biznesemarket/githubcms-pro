@@ -1,4 +1,4 @@
-import { siteConfig } from "../site.config"
+import { siteConfig } from "../site.config.ts"
 
 export const sectionSlugMap: Record<string, string> = {
   "1": "section-geo",

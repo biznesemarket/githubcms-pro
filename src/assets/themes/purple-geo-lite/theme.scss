@@ -4,7 +4,9 @@
    Inspired by Plob template.
    ═══════════════════════════════════════ */
 
-/* === Bootstrap Grid Foundation === */
+// Bootstrap 5.3 uses @import — deprecated in Sass 1.77+.
+// Migrate to @use when Bootstrap 6 ships (@use-based).
+// Suppressed via silenceDeprecations in vite.config.ts.
 @import "bootstrap/scss/functions";
 @import "bootstrap/scss/variables";
 @import "bootstrap/scss/maps";
@@ -87,26 +89,6 @@
   --transition-slow: 0.4s ease;
 }
 
-/* === Design Tokens — Dark Theme === */
-[data-theme="dark"] {
-  --color-bg: #0a0420;
-  --color-surface: #12082e;
-  --color-text: #e0d0f5;
-  --color-text-secondary: #9e7ec0;
-  --color-text-muted: #6b5090;
-  --color-border: #2a1060;
-  --color-accent: #a78bfa;
-  --color-accent-hover: #c4b5fd;
-  --color-bg-muted: #12082e;
-  --color-tag-bg: #1e0d40;
-  --color-answer-bg: linear-gradient(135deg, #4c1d95, #6d28d9);
-  --color-answer-text: #ffffff;
-  --color-cta-bg: linear-gradient(135deg, #0a0420, #1a0840);
-  --color-cta-text: #e0d0f5;
-  --color-faq-bg: #12082e;
-  --color-faq-border: #2a1060;
-}
-
 /* === Global Reset === */
 * { box-sizing: border-box; }
 body {
@@ -155,18 +137,6 @@ a:hover { color: var(--color-accent-hover); }
 .dropdown:hover .dropdown-menu { display: block; }
 .dropdown-item { display: block; padding: 8px 20px; font-size: 14px; color: var(--color-text); text-decoration: none; white-space: nowrap; }
 .dropdown-item:hover { background: var(--color-bg-muted); color: var(--color-accent); }
-.theme-toggle {
-  background: none;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm);
-  color: var(--color-text);
-  cursor: pointer;
-  font-size: var(--font-size-base);
-  margin-left: var(--space-sm);
-  padding: 4px 10px;
-  transition: all var(--transition-fast);
-}
-.theme-toggle:hover { background: var(--color-tag-bg); }
 
 /* === Page Banner === */
 .page-banner {
@@ -614,4 +584,23 @@ code { font-family: 'JetBrains Mono', 'Fira Code', monospace; font-size: 13px; c
 /* === High-contrast mode === */
 @media (prefers-contrast: high) {
   :root { --color-border: #666; }
+}
+
+/* === DEMO FREE Banner === */
+.demo-banner {
+  background: linear-gradient(90deg, #f59e0b, #f97316);
+  color: #1a0a2e;
+  text-align: center;
+  padding: 5px 16px;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  position: sticky;
+  top: 0;
+  z-index: 1050;
+}
+.demo-banner a {
+  color: #1a0a2e;
+  text-decoration: underline;
+  font-weight: 800;
 }

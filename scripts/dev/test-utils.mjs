@@ -1,7 +1,7 @@
 import { strict as assert } from "node:assert";
-import { slugify } from "../src/utils/slug.ts";
-import { useImages } from "../src/composables/useImages.ts";
-import { useToc, addHeadingIds } from "../src/composables/useToc.ts";
+import { slugify } from "../../src/utils/slug.ts";
+import { useImages } from "../../src/composables/useImages.ts";
+import { processHeadings } from "../../src/composables/useToc.ts";
 
 let passed = 0;
 let failed = 0;
@@ -69,9 +69,9 @@ test("uses provided dimensions over URL", () => {
   assert.strictEqual(result.height, 300);
 });
 
-test("extracts placeholder color from PixInLink URL", () => {
+test("uses default placeholder when PixInLink URL has no explicit colors", () => {
   const result = useImages({ src: "https://pixinlink.ru/api/v1/800x450/test" });
-  assert.strictEqual(result.placeholder, "#01696f");
+  assert.strictEqual(result.placeholder, "#f7f8fb");
 });
 
 test("default placeholder for non-PixInLink URL", () => {
@@ -89,12 +89,12 @@ test("loading is lazy by default", () => {
   assert.strictEqual(result.loading, "lazy");
 });
 
-// -- useToc --
-console.log("\nuseToc():");
+// -- processHeadings --
+console.log("\nprocessHeadings():");
 
 test("extracts h2 headings", () => {
   const html = '<h2>Introduction</h2><p>text</p><h2>Methods</h2><p>more</p>';
-  const toc = useToc(html);
+  const { toc } = processHeadings(html);
   assert.strictEqual(toc.length, 2);
   assert.strictEqual(toc[0].text, "Introduction");
   assert.strictEqual(toc[0].level, 2);
@@ -102,62 +102,53 @@ test("extracts h2 headings", () => {
 
 test("extracts h3 headings", () => {
   const html = '<h3>Subsection</h3><p>text</p>';
-  const toc = useToc(html);
+  const { toc } = processHeadings(html);
   assert.strictEqual(toc.length, 1);
   assert.strictEqual(toc[0].level, 3);
 });
 
 test("generates slugified ids", () => {
-  const html = '<h2>Hello World</h2>';
-  const toc = useToc(html);
+  const { html, toc } = processHeadings('<h2>Hello World</h2>');
   assert.strictEqual(toc[0].id, "hello-world");
+  assert.match(html, /id="hello-world"/);
 });
 
 test("generates Russian slugified ids", () => {
-  const html = '<h2>Безопасность сайтов</h2>';
-  const toc = useToc(html);
+  const { toc } = processHeadings('<h2>Безопасность сайтов</h2>');
   assert.strictEqual(toc[0].id, "bezopasnost-sajtov");
 });
 
 test("returns empty array for no headings", () => {
-  assert.deepStrictEqual(useToc("<p>no headings</p>"), []);
+  assert.deepStrictEqual(processHeadings("<p>no headings</p>").toc, []);
 });
 
 test("ignores h1 tags", () => {
-  const html = '<h1>Title</h1><h2>Section</h2>';
-  const toc = useToc(html);
+  const { toc } = processHeadings('<h1>Title</h1><h2>Section</h2>');
   assert.strictEqual(toc.length, 1);
   assert.strictEqual(toc[0].text, "Section");
 });
 
-// -- addHeadingIds --
-console.log("\naddHeadingIds():");
-
-test("adds id to h2 without existing id", () => {
-  const result = addHeadingIds('<h2>Hello</h2>');
-  assert.match(result, /id="hello"/);
-});
-
 test("preserves existing id", () => {
-  const result = addHeadingIds('<h2 id="custom">Hello</h2>');
-  assert.match(result, /id="custom"/);
-  assert.ok(!result.includes('id="custom" id='));
+  const { html } = processHeadings('<h2 id="custom">Hello</h2>');
+  assert.match(html, /id="custom"/);
+  assert.ok(!html.includes('id="custom" id='));
 });
 
 test("preserves existing attributes", () => {
-  const result = addHeadingIds('<h2 class="title" data-x="1">Hello</h2>');
-  assert.match(result, /class="title"/);
-  assert.match(result, /id="hello"/);
+  const { html } = processHeadings('<h2 class="title" data-x="1">Hello</h2>');
+  assert.match(html, /class="title"/);
+  assert.match(html, /id="hello"/);
 });
 
 test("does not modify h1", () => {
-  const result = addHeadingIds('<h1>Title</h1>');
-  assert.strictEqual(result, '<h1>Title</h1>');
+  const { html } = processHeadings('<h1>Title</h1>');
+  assert.strictEqual(html, '<h1>Title</h1>');
 });
 
 test("handles inline tags in heading text", () => {
-  const result = addHeadingIds('<h2>Hello <code>world</code></h2>');
-  assert.match(result, /id="hello-world"/);
+  const { html, toc } = processHeadings('<h2>Hello <code>world</code></h2>');
+  assert.match(html, /id="hello-world"/);
+  assert.strictEqual(toc[0].id, "hello-world");
 });
 
 // Summary

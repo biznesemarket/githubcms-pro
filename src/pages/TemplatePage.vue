@@ -2,11 +2,27 @@
 import { computed } from "vue"
 import { useSeo } from "../composables/useSeo"
 import { siteConfig } from "../site.config"
+import { loadTinkoffScript, openPayment } from "../composables/usePayment"
 import BreadcrumbNav from "../components/BreadcrumbNav.vue"
+import { t } from "../i18n"
 
 const props = defineProps<{ slug: string }>()
 
 interface Tpl { name: string; slug: string; price: string; desc: string; longDesc: string; preview: string; features: string[]; faq: { q: string; a: string }[] }
+
+function buyTemplate(name: string, slug: string) {
+  const tk = (window as any).TINKOFF_TERMINAL_KEY || siteConfig.tinkoffTerminalKey;
+  if (!tk) { alert(t.templates.paymentNotReady); return }
+  loadTinkoffScript().then(() => {
+    openPayment({
+      terminalKey: tk,
+      amount: 350000,
+      orderId: `tpl-${slug}-${Date.now()}`,
+      description: `Template: ${name}`,
+      itemName: `Шаблон ${name}`,
+    })
+  }).catch(() => { alert(t.templates.paymentUnavailable) })
+}
 
 const freeTemplates: Record<string, Tpl> = {
   "purple-geo-lite": { name:"Purple GEO Lite", slug:"purple-geo-lite", price:"Бесплатно", desc:"Обрезанный Free-шаблон GitHub CMS с фиолетовой визуальной системой.", longDesc:"Базовый Free-шаблон GitHub CMS. Он включает один дизайн, одну главную страницу, базовые SEO-промпты и статическую Vue/Vite SSG-сборку. Смена шаблонов, расширенные GEO-промпты и marketplace относятся к Pro.", preview:"https://pixinlink.ru/api/v1/800x500/purple-geo-lite-static-site-template", features:["Один установленный дизайн","Базовые SEO-промпты","Vue/Vite SSG","Bootstrap 5","Без смены шаблонов","Без Pro GEO-блоков"], faq:[{q:"Это единственный шаблон Free?",a:"Да. Free-дистрибутив включает только Purple GEO Lite."},{q:"Можно сменить шаблон?",a:"Смена шаблонов и marketplace доступны в Pro."},{q:"Что входит?",a:"Тема, базовый prompt-pack и статическая сборка без backend."}] },
@@ -58,10 +74,61 @@ useSeo(() => {
   <main v-if="!tpl" class="py-5 text-center"><h2>Шаблон не найден</h2></main>
   <main v-else>
     <BreadcrumbNav :items="[{ name: 'Главная', url: '/' }, { name: 'Шаблоны', url: '/templates/' }, { name: tpl.name }]" />
-    <section class="position-relative overflow-hidden" style="min-height:400px;background:linear-gradient(135deg,#0a0414,#1a0a2e,#2d1060)"><div class="container position-relative py-5" style="z-index:2"><div class="row align-items-center"><div class="col-lg-7 text-white"><p class="text-uppercase fw-bold mb-2 opacity-75" style="font-size:12px;letter-spacing:3px;color:#c4b5fd">ШАБЛОН</p><h1 class="fw-bold mb-3 lh-sm" style="font-size:36px">{{ tpl.name }}</h1><p class="lead mb-4 opacity-85" style="font-size:17px">{{ tpl.desc }}</p><div class="d-flex align-items-center gap-3 mb-3"><span class="fw-bold" style="font-size:32px;color:#c4b5fd">{{ tpl.price }}</span></div><a v-if="tpl.price === 'Бесплатно'" href="#" class="btn btn-light btn-lg px-5 py-3 fw-bold" style="border-radius:12px;color:var(--color-accent)">Установить</a><button v-else class="btn btn-light btn-lg px-5 py-3 fw-bold" style="border-radius:12px;color:var(--color-accent)" @click="alert('Платёжная система настраивается')">Купить — {{ tpl.price }} →</button></div><div class="col-lg-5 text-center mt-4 mt-lg-0"><img :src="tpl.preview" :alt="tpl.name" class="img-fluid rounded-4" style="box-shadow:0 20px 60px rgba(0,0,0,0.5)"></div></div></div></section>
+    <section class="position-relative overflow-hidden" style="min-height:400px;background:linear-gradient(135deg,#0a0414,#1a0a2e,#2d1060)"><div class="container position-relative py-5" style="z-index:2"><div class="row align-items-center"><div class="col-lg-7 text-white"><p class="text-uppercase fw-bold mb-2 opacity-75" style="font-size:12px;letter-spacing:3px;color:#c4b5fd">ШАБЛОН</p><h1 class="fw-bold mb-3 lh-sm" style="font-size:36px">{{ tpl.name }}</h1><p class="lead mb-4 opacity-85" style="font-size:17px">{{ tpl.desc }}</p><div class="d-flex align-items-center gap-3 mb-3"><span class="fw-bold" style="font-size:32px;color:#c4b5fd">{{ tpl.price }}</span></div><a v-if="tpl.price === 'Бесплатно'" href="#" class="btn btn-light btn-lg px-5 py-3 fw-bold" style="border-radius:12px;color:var(--color-accent)">Установить</a><button v-else class="btn btn-light btn-lg px-5 py-3 fw-bold" style="border-radius:12px;color:var(--color-accent)" @click="buyTemplate(tpl.name, tpl.slug)">Купить — {{ tpl.price }} →</button></div><div class="col-lg-5 text-center mt-4 mt-lg-0"><img :src="tpl.preview" :alt="tpl.name" class="img-fluid rounded-4" style="box-shadow:0 20px 60px rgba(0,0,0,0.5)"></div></div></div></section>
     <section class="py-5"><div class="container"><h2 class="fw-bold mb-4" style="font-size:28px">Описание</h2><p style="font-size:15px;line-height:1.8;color:var(--color-text-muted);max-width:800px">{{ tpl.longDesc }}</p></div></section>
     <section class="py-5" style="background:var(--color-bg-muted)"><div class="container"><h2 class="fw-bold mb-4" style="font-size:28px">Что включено</h2><div class="row g-3"><div v-for="(f, i) in tpl.features" :key="i" class="col-sm-6 col-lg-4"><div class="d-flex"><span class="fw-bold me-2" style="color:var(--color-accent)">✓</span><span style="font-size:14px">{{ f }}</span></div></div></div></div></section>
     <section class="py-5"><div class="container"><h2 class="fw-bold mb-4" style="font-size:28px">Вопросы</h2><div class="row g-4"><div v-for="(f, i) in tpl.faq" :key="i" class="col-md-4"><div class="card border-0 shadow-sm h-100 p-4" style="border-radius:14px"><h5 class="fw-bold mb-2" style="font-size:14px;color:var(--color-accent)">{{ f.q }}</h5><p class="mb-0" style="font-size:13px;color:var(--color-text-muted)">{{ f.a }}</p></div></div></div></div></section>
-    <section class="py-5 text-center text-white" style="background:linear-gradient(135deg,#0a0414,#1a0a2e,#2d1060)"><div class="container py-4"><h2 class="fw-bold mb-3" style="font-size:30px">{{ tpl.name }} — {{ tpl.price }}</h2><p class="mb-4 opacity-85">Установка одной командой. Пожизненные обновления.</p><a v-if="tpl.price === 'Бесплатно'" href="#" class="btn btn-light btn-lg px-5 py-3 fw-bold" style="border-radius:12px;color:var(--color-accent)">Установить</a><button v-else class="btn btn-light btn-lg px-5 py-3 fw-bold" style="border-radius:12px;color:var(--color-accent)" @click="alert('Платёжная система настраивается')">Купить — {{ tpl.price }} →</button></div></section>
+    <section class="py-5 text-center text-white" style="background:linear-gradient(135deg,#0a0414,#1a0a2e,#2d1060)"><div class="container py-4"><h2 class="fw-bold mb-3" style="font-size:30px">{{ tpl.name }} — {{ tpl.price }}</h2><p class="mb-4 opacity-85">Установка одной командой. Пожизненные обновления.</p><a v-if="tpl.price === 'Бесплатно'" href="#" class="btn btn-light btn-lg px-5 py-3 fw-bold" style="border-radius:12px;color:var(--color-accent)">Установить</a><button v-else class="btn btn-light btn-lg px-5 py-3 fw-bold" style="border-radius:12px;color:var(--color-accent)" @click="buyTemplate(tpl.name, tpl.slug)">Купить — {{ tpl.price }} →</button></div></section>
+
+    <!-- DELIVERY / RETURNS / SECURITY -->
+    <section class="py-4" style="background:var(--color-bg-muted)">
+      <div class="container">
+        <div class="row g-4">
+          <div class="col-lg-4">
+            <div class="shop-info-card">
+              <h5>🚚 {{ t.shop.delivery }}</h5>
+              <p>{{ siteConfig.locale === 'ru' ? 'Мгновенная доставка: шаблон загружается сразу после оплаты. Вы получаете ZIP-архив с полным исходным кодом, SCSS-переменными и документацией. Доступ к скачиванию сохраняется в личном кабинете бессрочно.' : 'Instant delivery: template is available for download immediately after payment. You receive a ZIP archive with full source code, SCSS variables, and documentation. Download access is retained in your account indefinitely.' }}</p>
+            </div>
+          </div>
+          <div class="col-lg-4">
+            <div class="shop-info-card">
+              <h5>🔄 {{ t.shop.return }}</h5>
+              <p>{{ siteConfig.locale === 'ru' ? 'Для цифровых товаров действует возврат в течение 14 дней, если шаблон не был загружен. После скачивания возврат не предусмотрен согласно ст. 26.1 ЗоЗПП. Вы можете ознакомиться с демо-версией перед покупкой на этой странице.' : 'For digital goods, a 14-day return applies if the template has not been downloaded. After download, returns are not available per digital goods legislation. You can preview the template on this page before purchase.' }}</p>
+            </div>
+          </div>
+          <div class="col-lg-4">
+            <div class="shop-info-card">
+              <h5>🔒 {{ t.securityTitle }}</h5>
+              <p>{{ t.securityDesc }} <RouterLink to="/privacy/" style="color:var(--color-accent)">{{ t.footer.privacy }}</RouterLink>.</p>
+              <p class="shop-info-steps">{{ t.exportNotice }}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- PAYMENT LOGOS -->
+    <section class="py-4 text-center">
+      <div class="container">
+        <p style="font-size:13px;color:var(--color-text-muted);margin-bottom:12px">{{ t.paymentSecurityDesc }}</p>
+        <div class="d-flex flex-wrap justify-content-center align-items-center gap-3">
+          <a :href="t.tbankLink" target="_blank" rel="noopener noreferrer" class="payment-bank-logo">T-Bank</a>
+          <span class="payment-card-logo">Visa</span>
+          <span class="payment-card-logo">Mastercard</span>
+          <span class="payment-card-logo">МИР</span>
+          <span class="payment-card-logo">T-Pay</span>
+        </div>
+      </div>
+    </section>
   </main>
 </template>
+
+<style scoped>
+.shop-info-card { padding: 20px; border-radius: 12px; background: var(--color-surface); border: 1px solid var(--color-border); height: 100%; }
+.shop-info-card h5 { font-size: 15px; margin: 0 0 8px; }
+.shop-info-card p { font-size: 13px; color: var(--color-text-muted); line-height: 1.6; margin: 0; }
+.shop-info-steps { font-size: 12px !important; color: var(--color-text-muted); margin-top: 10px !important; padding-top: 10px; border-top: 1px dashed var(--color-border); }
+.payment-bank-logo { display: inline-flex; align-items: center; padding: 6px 16px; border-radius: 8px; background: var(--color-surface); border: 1px solid var(--color-border); font-weight: 700; font-size: 14px; color: var(--color-text); text-decoration: none; transition: background 0.2s; }
+.payment-bank-logo:hover { background: var(--color-bg-muted); }
+.payment-card-logo { display: inline-flex; align-items: center; padding: 6px 14px; border-radius: 8px; background: var(--color-bg-muted); font-weight: 600; font-size: 12px; color: var(--color-text-muted); }
+</style>

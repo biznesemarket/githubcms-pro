@@ -1,7 +1,8 @@
-import { siteConfig } from "../site.config"
-import type { JsonLd, PageContext } from "./types"
-import { compact, absoluteUrl, sectionIdToSlug } from "./config"
-import { t } from "../i18n"
+import { siteConfig } from "../site.config.ts"
+import type { JsonLd, PageContext } from "./types.ts"
+import { compact, absoluteUrl, sectionIdToSlug } from "./config.ts"
+import { sectionNav } from "../content/section-nav.ts"
+import { t } from "../i18n/index.ts"
 
 // ─── Organization ───
 export function createOrganization(): JsonLd {
@@ -34,7 +35,7 @@ export function createOrganization(): JsonLd {
       certification: ((siteConfig as Record<string, unknown>).certifications as string[]).map((c: string) => ({
         "@type": "Certification",
         name: c,
-        issuedBy: { "@type": "Organization", name: "Росстандарт" },
+        issuedBy: { "@type": "Organization", name: siteConfig.orgName },
       })),
     } : {}),
   })
@@ -81,7 +82,7 @@ export function createArticle(context: PageContext): JsonLd {
     dateModified: article?.frontmatter?.updated || article?.frontmatter?.date || context.modifiedTime,
     author: article?.frontmatter?.author
       ? createPerson({ name: article.frontmatter.author })
-      : { "@type": "Person", name: "GitHub CMS Team" },
+      : { "@type": "Person", name: siteConfig.orgName || "Unknown" },
     image: context.image,
     mainEntityOfPage: context.url,
     keywords: context.tags?.join(", "),
@@ -146,24 +147,24 @@ function breadcrumbName(seg: string): string {
     case "tag": return t.breadcrumb.tag
     case "templates": return t.breadcrumb.templates
     case "about": return t.breadcrumb.about
-    case "about-guide": return "Руководство и команда"
-    case "about-mission": return "Миссия и ценности"
-    case "about-careers": return "Вакансии и карьера"
-    case "about-history": return "История компании"
-    case "about-reviews": return "Отзывы и письма"
-    case "about-certificates": return "Сертификаты и реквизиты"
-    case "about-press": return "Пресс-центр"
-    case "about-partners": return "Партнёрская программа"
+    case "about-guide": return t.breadcrumb.aboutGuide || "Guide"
+    case "about-mission": return t.breadcrumb.aboutMission || "Mission"
+    case "about-careers": return t.breadcrumb.aboutCareers || "Careers"
+    case "about-history": return t.breadcrumb.aboutHistory || "History"
+    case "about-reviews": return t.breadcrumb.aboutReviews || "Reviews"
+    case "about-certificates": return t.breadcrumb.aboutCertificates || "Certificates"
+    case "about-press": return t.breadcrumb.aboutPress || "Press"
+    case "about-partners": return t.breadcrumb.aboutPartners || "Partners"
     case "contact": return t.breadcrumb.contact
-    case "section-geo": return t.razdel.sections[1].title
-    case "section-devops": return t.razdel.sections[2].title
-    case "section-content": return t.razdel.sections[3].title
-    case "shop": return "Магазин"
-    case "shop-section-1": return "Демо раздел товара 1"
-    case "shop-section-2": return "Демо раздел товара 2"
-    case "shop-section-3": return "Демо раздел товара 3"
-    case "shop-section-4": return "Демо раздел товара 4"
-    case "shop-section-5": return "Демо раздел товара 5"
+    case "section-geo": return sectionNav["section-geo"]?.title ?? "GEO"
+    case "section-devops": return sectionNav["section-devops"]?.title ?? "DevOps"
+    case "section-content": return sectionNav["section-content"]?.title ?? "Content"
+    case "shop": return t.breadcrumb.shop || "Shop"
+    case "shop-section-1": return t.breadcrumb.shopSection1 || "Shop Section 1"
+    case "shop-section-2": return t.breadcrumb.shopSection2 || "Shop Section 2"
+    case "shop-section-3": return t.breadcrumb.shopSection3 || "Shop Section 3"
+    case "shop-section-4": return t.breadcrumb.shopSection4 || "Shop Section 4"
+    case "shop-section-5": return t.breadcrumb.shopSection5 || "Shop Section 5"
     default: return seg.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())
   }
 }
@@ -356,7 +357,7 @@ export function createImageObject(name: string, url: string, desc: string, capti
     url,
     description: desc,
     contentUrl: url,
-    encodingFormat: "image/png",
+    encodingFormat: caption?.match(/\.(\w+)(?:\?|$)/)?.[1] === "svg" ? "image/svg+xml" : "image/png",
     caption,
   })
 }

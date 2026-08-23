@@ -1,4 +1,5 @@
-import { articles as generatedArticles } from "../generated/articles";
+import { articles as generatedArticles } from "../generated/articles.ts";
+import type { MarkdownBlock } from "../markdown/blocks.mjs";
 
 export interface ArticleFrontmatter {
   title: string;
@@ -13,6 +14,7 @@ export interface ArticleFrontmatter {
   layout: string;
   cover_image?: string;
   geo?: string[];
+  raw_html?: boolean;
 }
 
 export interface FaqItem {
@@ -24,7 +26,7 @@ export interface Article {
   path: string;
   frontmatter: ArticleFrontmatter;
   html: string;
-  blocks: Record<string, string>;
+  blocks: Record<string, MarkdownBlock>;
   faqItems: FaqItem[];
   readingTime: number;
 }

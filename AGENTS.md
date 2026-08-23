@@ -44,11 +44,16 @@ scripts/                    ← build scripts — read only
 
 1. Content lives in `content/{locale}/` — never hardcode text in `src/pages/`
 2. Each `.md` file MUST have frontmatter: title, description, slug, date
-3. Always add BOTH Russian (`ru`) and English (`en`) versions
+3. Always add BOTH Russian (`ru`) and English (`en`) versions (same relative path in both locales)
 4. After any content change: `npm run generate:content && npm run build`
 5. `src/generated/` is auto-generated — editing it will be overwritten
 6. Menu labels are in `src/i18n/{locale}.ts` — `nav` section
 7. When in doubt, check `.kilo/instructions/` for the specific task
+8. **Block markers are PAIRED**: `<!-- @block:name --> … content … <!-- /@block:name -->`. Block content is excluded from the article body and renders as a styled section in source order. Use only: `hero`, `answer-first`, `key-facts`, `featured-snippet`, `faq`, `cta`, `schema-hints`
+9. **FAQ format**: use `**Q:** … **A:** …` pairs inside the `faq` block (legacy `### Heading` format is a fallback)
+10. **Locale parity is enforced**: `validate:content` warns if a slug exists in `ru` but not `en` (or vice versa)
+11. **Slugs are kebab-case**: `^[a-z0-9]+(?:-[a-z0-9]+)*$`; nesting = folders, slug = last segment
+12. **raw_html pages**: set `raw_html: true` explicitly; they must NOT contain `<script>`, `on*=` handlers, or a nested `<main>`
 
 ## Repository map — strict boundaries
 

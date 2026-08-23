@@ -1,18 +1,18 @@
 {
   "name": "githubcms",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "private": true,
   "type": "module",
   "scripts": {
     "dev": "npm run generate:content && vite",
-    "build": "npm run generate:content && npm run build:section-content && vite-ssg build && npm run generate:seo-files && npm run inject:seo && npm run generate:rss",
+    "build": "npm run generate:content && node scripts/generate-site-config.mjs && node scripts/generate-site-tree.mjs && vite-ssg build && npm run generate:seo-files && npm run inject:seo && npm run generate:rss",
     "preview": "vite preview",
     "check:dist-secrets": "node scripts/dev/check-dist-secrets.mjs",
     "generate:content": "node scripts/generate-content.mjs",
+    "generate:site-config": "node scripts/generate-site-config.mjs",
     "generate:seo-files": "node scripts/generate-seo-files.mjs",
     "inject:seo": "node scripts/inject-seo.mjs",
     "generate:rss": "node scripts/generate-rss.mjs",
-    "build:section-content": "node scripts/build-section-content.mjs",
     "build:ru": "node scripts/build-locale.mjs ru",
     "build:en": "node scripts/build-locale.mjs en",
     "build:free": "node scripts/validate-edition.mjs --edition free --build-only",
@@ -33,23 +33,28 @@
     "validate:nginx-example": "node scripts/validate-nginx-example.mjs",
     "validate:pro": "node scripts/validate-edition.mjs --edition pro",
     "validate:seo-files": "node scripts/validate-seo-files.mjs",
+    "validate:dist-jsonld": "node scripts/dev/validate-dist-jsonld.mjs",
     "validate:templates": "node scripts/validate-template-packs.mjs",
     "test:content": "node scripts/dev/test-validate-content.mjs",
     "test:pixinlink": "node --experimental-strip-types scripts/dev/test-pixinlink.mjs",
     "test:markdown": "node --experimental-strip-types scripts/dev/test-markdown.mjs",
+    "test:blocks": "node scripts/dev/test-blocks.mjs",
     "test:integration": "node scripts/dev/test-integration.mjs",
     "test:utils": "node --experimental-strip-types scripts/dev/test-utils.mjs",
     "test:seo": "node --experimental-strip-types scripts/dev/test-seo.mjs",
     "test:security": "node scripts/dev/test-security.mjs",
     "test:performance": "node scripts/dev/test-performance.mjs",
     "test:accessibility": "node scripts/dev/test-accessibility.mjs",
-    "test": "npm run test:content && npm run test:pixinlink && npm run test:markdown",
-    "test:all": "npm run build && npm run test:content && npm run test:pixinlink && npm run test:markdown && npm run test:utils && npm run test:seo && npm run test:integration && npm run test:security && npm run test:performance && npm run test:accessibility",
-    "test:e2e": "npm run build && npm run test:integration"
+    "test:section-paths": "node scripts/dev/test-section-paths.mjs",
+    "test": "npm run test:content && npm run test:pixinlink && npm run test:markdown && npm run test:blocks",
+    "test:all": "npm run build && npm run test:content && npm run test:pixinlink && npm run test:markdown && npm run test:blocks && npm run test:utils && npm run test:seo && npm run test:integration && npm run test:security && npm run test:performance && npm run test:accessibility",
+    "test:e2e": "npm run build && npm run test:integration",
+    "health": "node scripts/monitoring/health-check.mjs"
   },
   "dependencies": {
-    "@unhead/vue": "^2.1.15",
+    "@unhead/vue": "^3.1.0",
     "bootstrap": "^5.3.8",
+    "cheerio": "^1.2.0",
     "gray-matter": "^4.0.3",
     "highlight.js": "^11.11.1",
     "markdown-it": "^14.1.0",
@@ -57,6 +62,9 @@
     "vite-ssg": "^28.3.0",
     "vue": "^3.5.13",
     "vue-router": "^4.5.0"
+  },
+  "overrides": {
+    "braces": ">=3.0.3"
   },
   "devDependencies": {
     "@types/markdown-it": "^14.1.2",
@@ -67,5 +75,11 @@
     "typescript": "^6.0.3",
     "vite": "^8.0.10",
     "vue-tsc": "^3.2.7"
+  },
+  "//": {
+    "@types/node": "CI uses node-version:20, local dev may use higher — align if API breakages surface",
+    "bootstrap": "5.3.x is in maintenance mode — track security advisories for tooltips/dropdowns",
+    "sanitize-html": "2.14.x — pin and monitor changelog for breaking changes to defaults",
+    "vite": "8.0.x is the latest release line as of 2026-05 — verified on npm registry"
   }
 }

@@ -1,0 +1,58 @@
+{
+  "siteUrl": "https://preflight.githubcms.example",
+  "siteName": "GitHub CMS",
+  "siteDescription": "Статический сайт с AI-видимостью из коробки. Markdown → JSON-LD → деплой за 2 минуты.",
+  "defaultImage": "https://pixinlink.ru/api/v1/1200x630/github-cms-static-site-generator-ai-visibility",
+  "locale": "ru",
+  "isRu": true,
+  "ruDomain": "https://preflight.githubcms.example",
+  "enDomain": "https://preflight.githubcms.example",
+  "alternateUrl": "https://preflight.githubcms.example",
+  "org": {
+    "name": "Your Company",
+    "legalName": "Your Company LLC",
+    "inn": "",
+    "kpp": "",
+    "address": "",
+    "phone": "",
+    "email": "",
+    "areaServed": "Russia",
+    "sameAs": [
+      "https://github.com/hubcms-dot/githubcms"
+    ]
+  },
+  "csp": {
+    "scriptSrc": [
+      "https://*.t-static.ru",
+      "https://*.tbank.ru",
+      "https://*.tinkoff.ru",
+      "https://*.tcsbank.ru",
+      "https://*.nspk.ru"
+    ],
+    "styleSrc": [
+      "https://*.tinkoff.ru",
+      "https://*.tbank.ru",
+      "https://*.tcsbank.ru",
+      "https://*.nspk.ru",
+      "https://*.t-static.ru"
+    ],
+    "imgSrc": [
+      "https:",
+      "https://pixinlink.ru",
+      "https://pixinlink.com",
+      "https://*.tinkoff.ru",
+      "https://*.tbank.ru"
+    ],
+    "connectSrc": [
+      "https://*.t-static.ru",
+      "https://*.tinkoff.ru",
+      "https://*.tbank.ru",
+      "https://*.tcsbank.ru",
+      "https://*.nspk.ru"
+    ],
+    "frameSrc": [
+      "https://*.tbank.ru",
+      "https://*.tinkoff.ru"
+    ]
+  }
+}

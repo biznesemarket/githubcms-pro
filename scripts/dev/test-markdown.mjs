@@ -1,5 +1,6 @@
 import { strict as assert } from "node:assert";
 import { useMarkdown } from "../../src/composables/useMarkdown.ts";
+import { parseBlocks, extractFaq, validateBlocks } from "../../src/markdown/blocks.mjs";
 
 let passed = 0;
 let failed = 0;
@@ -33,9 +34,13 @@ geo:
   - "Test Entity"
 ---
 
+This is the article body text.
+
 <!-- @block: answer-first -->
 
 This is the answer-first block content.
+
+<!-- /@block: answer-first -->
 
 <!-- @block: key-facts -->
 
@@ -44,6 +49,8 @@ This is the answer-first block content.
 - Fact one
 - Fact two
 - Fact three
+
+<!-- /@block: key-facts -->
 
 <!-- @block: faq -->
 
@@ -55,11 +62,15 @@ This is the answer-first block content.
 **Q: How does it work?**
 **A:** It works by parsing Markdown with frontmatter.
 
+<!-- /@block: faq -->
+
 <!-- @block: cta -->
 
 ## Next Steps
 
 Start using GitHub CMS today.
+
+<!-- /@block: cta -->
 `;
 
 const markdownNoBlocks = `---
@@ -101,6 +112,38 @@ layout: "article"
 ${"Lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. ".repeat(50)}
 `;
 
+const markdownLegacy = `---
+title: "Legacy Blocks"
+description: "Article with legacy open-ended block markers"
+slug: "legacy-blocks"
+date: "2026-05-07"
+author: "Test"
+category: "Testing"
+tags: []
+schema_type: "Article"
+layout: "article"
+---
+
+Body before blocks.
+
+<!-- @block: answer-first -->
+
+Legacy answer text.
+
+<!-- @block: key-facts -->
+
+## Key Facts
+
+- Legacy fact one
+- Legacy fact two
+
+<!-- @block: cta -->
+
+## Next Step
+
+Start now.
+`;
+
 console.log("=== useMarkdown Tests ===\n");
 
 // -- Frontmatter parsing --
@@ -138,11 +181,12 @@ test("handles missing optional fields gracefully", () => {
 // -- HTML rendering --
 console.log("\nHTML:");
 
-test("renders Markdown to sanitized HTML", () => {
+test("body excludes block content (no duplication)", () => {
   const result = useMarkdown(validMarkdown);
-  assert.ok(result.html.includes("<p>This is the answer-first block content.</p>"));
-  assert.ok(result.html.includes("<h2>Key Facts</h2>"));
-  assert.ok(result.html.includes("<li>Fact one</li>"));
+  assert.ok(result.html.includes("<p>This is the article body text.</p>"));
+  assert.ok(!result.html.includes("answer-first block content"));
+  assert.ok(!result.html.includes("<h2>Key Facts</h2>"));
+  assert.ok(!result.html.includes("Fact one"));
 });
 
 test("renders bold and italic", () => {
@@ -173,26 +217,33 @@ console.log("\nBlocks:");
 test("extracts answer-first block", () => {
   const result = useMarkdown(validMarkdown);
   assert.ok("answer-first" in result.blocks);
-  assert.match(result.blocks["answer-first"], /answer-first block content/);
+  assert.match(result.blocks["answer-first"].html, /answer-first block content/);
+  assert.strictEqual(result.blocks["answer-first"].position, 1);
 });
 
 test("extracts key-facts block", () => {
   const result = useMarkdown(validMarkdown);
   assert.ok("key-facts" in result.blocks);
-  assert.match(result.blocks["key-facts"], /<h2>Key Facts<\/h2>/);
-  assert.match(result.blocks["key-facts"], /Fact one/);
+  assert.match(result.blocks["key-facts"].html, /<h2>Key Facts<\/h2>/);
+  assert.match(result.blocks["key-facts"].html, /Fact one/);
 });
 
 test("extracts faq block", () => {
   const result = useMarkdown(validMarkdown);
   assert.ok("faq" in result.blocks);
-  assert.match(result.blocks["faq"], /<h2>FAQ<\/h2>/);
+  assert.match(result.blocks["faq"].html, /<h2>FAQ<\/h2>/);
 });
 
 test("extracts cta block", () => {
   const result = useMarkdown(validMarkdown);
   assert.ok("cta" in result.blocks);
-  assert.match(result.blocks["cta"], /<h2>Next Steps<\/h2>/);
+  assert.match(result.blocks["cta"].html, /<h2>Next Steps<\/h2>/);
+});
+
+test("blocks carry plainText and source position", () => {
+  const result = useMarkdown(validMarkdown);
+  assert.ok(result.blocks["key-facts"].plainText.includes("Fact one"));
+  assert.ok(result.blocks["cta"].position > result.blocks["answer-first"].position);
 });
 
 test("returns empty blocks for article without markers", () => {
@@ -347,7 +398,7 @@ layout: "article"
   assert.ok(result.html.includes("Safe content"));
 });
 
-test("preserves allowed HTML attributes", () => {
+test("strips target=_blank and forces rel=noopener noreferrer", () => {
   const result = useMarkdown(`---
 title: "Attrs"
 description: "Attributes"
@@ -361,8 +412,8 @@ layout: "article"
 ---
 <a href="/page" target="_blank" rel="noopener">Link</a>
 `);
-  assert.ok(result.html.includes('target="_blank"'));
-  assert.ok(result.html.includes('rel="noopener"'));
+  assert.ok(!result.html.includes('target="_blank"'));
+  assert.ok(result.html.includes("noreferrer"));
 });
 
 test("frontmatter with numeric values parses correctly", () => {
@@ -382,6 +433,124 @@ layout: "article"
 Body
 `);
   assert.deepStrictEqual(result.frontmatter.tags, [42, 7]);
+});
+
+// -- Block parser semantics --
+console.log("\nBlockParser:");
+
+test("parseBlocks body excludes paired block content", () => {
+  const r = parseBlocks(`Intro.
+
+<!-- @block: answer-first -->
+Answer.
+<!-- /@block: answer-first -->
+
+Between.
+
+<!-- @block: key-facts -->
+## Facts
+- one
+<!-- /@block: key-facts -->
+
+Outro.`);
+  assert.ok(r.body.includes("Intro."));
+  assert.ok(r.body.includes("Between."));
+  assert.ok(r.body.includes("Outro."));
+  assert.ok(!r.body.includes("Answer."));
+  assert.ok(!r.body.includes("Facts"));
+  assert.deepStrictEqual(r.errors, []);
+  assert.deepStrictEqual(r.legacyWarnings, []);
+});
+
+test("parseBlocks handles legacy open-ended markers with warning", () => {
+  const r = parseBlocks(`Intro.
+
+<!-- @block: answer-first -->
+Legacy answer.
+
+<!-- @block: key-facts -->
+## Facts
+- one
+`);
+  assert.strictEqual(r.blocks.length, 2);
+  assert.match(r.blocks[0].html, /Legacy answer/);
+  assert.strictEqual(r.legacyWarnings.length, 2);
+  assert.deepStrictEqual(r.errors, []);
+  assert.ok(!r.body.includes("Legacy answer"));
+});
+
+test("parseBlocks reports stray closing marker", () => {
+  const r = parseBlocks(`Intro.
+
+<!-- /@block: faq -->
+Oops.
+`);
+  assert.strictEqual(r.errors.length, 1);
+  assert.match(r.errors[0], /without a matching opening/i);
+});
+
+test("validateBlocks flags unknown and duplicate blocks", () => {
+  const errors = validateBlocks(`<!-- @block: answer-first -->
+A
+<!-- /@block: answer-first -->
+<!-- @block: mystery -->
+X
+<!-- /@block: mystery -->
+<!-- @block: answer-first -->
+B
+<!-- /@block: answer-first -->
+`);
+  const joined = errors.join("\n");
+  assert.ok(joined.includes("Unknown block name 'mystery'"));
+  assert.ok(joined.includes("Duplicate singleton block 'answer-first'"));
+});
+
+test("extractFaq supports canonical Q/A and legacy headings", () => {
+  const canonical = extractFaq(`## FAQ
+
+**Q: One?**
+**A:** First answer.
+
+**Q: Two?**
+**A:** Second answer.
+`);
+  assert.strictEqual(canonical.length, 2);
+  assert.strictEqual(canonical[0].question, "One?");
+  assert.strictEqual(canonical[1].answer, "Second answer.");
+
+  const legacy = extractFaq(`## FAQ
+
+### Legacy question?
+
+Legacy answer text.
+
+### Another?
+
+Another answer.
+`);
+  assert.strictEqual(legacy.length, 2);
+  assert.strictEqual(legacy[0].question, "Legacy question?");
+  assert.strictEqual(legacy[1].answer, "Another answer.");
+});
+
+test("extractFaq deduplicates normalized questions and drops empties", () => {
+  const items = extractFaq(`**Q: Same question?**
+**A:** First.
+
+**Q: Same question?**
+**A:** Second.
+
+**Q:   **
+**A:** Third.
+`);
+  assert.strictEqual(items.length, 1);
+  assert.strictEqual(items[0].answer, "First.");
+});
+
+test("legacy markers produce warnings but still parse", () => {
+  const r = parseBlocks(markdownLegacy.split("---\n")[2]);
+  assert.strictEqual(r.blocks.length, 3);
+  assert.ok(r.legacyWarnings.length >= 3);
 });
 
 // Summary

@@ -1,6 +1,5 @@
-import { readFileSync } from "node:fs";
+import { readFileSync, existsSync, readdirSync } from "node:fs";
 import { join } from "node:path";
-import { existsSync, readdirSync } from "node:fs";
 
 export function loadEnvFile(envPath) {
   if (!existsSync(envPath)) return;
@@ -80,10 +79,10 @@ export function collectPageHtmlFiles(dir) {
 export function getLocaleConfig() {
   const locale = process.env.VITE_LOCALE || "ru";
   const isRu = locale === "ru";
-  const siteUrl = (process.env.VITE_SITE_URL || process.env.SITE_URL || "https://githubcms.com").replace(/\/+$/, "");
-  const alternateUrl = siteUrl.includes("githubcms.ru")
-    ? siteUrl.replace("githubcms.ru", "githubcms.com")
-    : siteUrl.replace("githubcms.com", "githubcms.ru");
+  const siteUrl = (process.env.VITE_SITE_URL || process.env.SITE_URL || "https://example.com").replace(/\/+$/, "");
+  const alternateUrl = siteUrl.includes(".ru")
+    ? siteUrl.replace(/\.ru$/, ".com")
+    : siteUrl.replace(/\.com$/, ".ru");
   const siteName = "GitHub CMS";
   const siteDescription = isRu
     ? "Статический сайт с AI-видимостью из коробки. Markdown → JSON-LD → деплой за 2 минуты."

@@ -6,7 +6,16 @@ const distDir = join(process.cwd(), "dist");
 let passed = 0;
 let failed = 0;
 
-const siteUrl = (process.env.VITE_SITE_URL || process.env.SITE_URL || "https://githubcms.com").replace(/\/+$/, "");
+// Single source of truth: src/generated/site-config.json (produced during build).
+const siteConfig = (() => {
+  try {
+    return JSON.parse(readFileSync(join(process.cwd(), "src", "generated", "site-config.json"), "utf8"));
+  } catch {
+    return { siteUrl: "https://example.com", siteName: "GitHub CMS" };
+  }
+})();
+const siteUrl = (process.env.VITE_SITE_URL || process.env.SITE_URL || siteConfig.siteUrl || "https://example.com").replace(/\/+$/, "");
+const siteName = process.env.VITE_SITE_NAME || siteConfig.siteName || "GitHub CMS";
 
 function test(name, fn) {
   try {
@@ -100,7 +109,7 @@ console.log("\n4. RSS feed:");
 const rss = readFileSync(join(distDir, "rss.xml"), "utf8");
 test("starts with XML declaration", () => { assert.ok(rss.startsWith('<?xml')); });
 test("has rss channel", () => { assert.match(rss, /<rss[^>]*>/); });
-test("has channel/title", () => { assert.match(rss, /<title>GitHub CMS<\/title>/); });
+test("has channel/title", () => { assert.match(rss, new RegExp(`<title>${siteName}</title>`)); });
 test("has channel/link", () => {
   const expected = `<link>${siteUrl}/</link>`;
   assert.match(rss, new RegExp(expected.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
@@ -142,13 +151,14 @@ test(`article pages have BreadcrumbList: ${articlePages.length}`, () => {
 
 // 8. No broken internal links
 console.log("\n8. Internal links:");
-const baseUrl = "https://githubcms.com";
 for (const htmlFile of htmlFiles.slice(0, 5)) {
   const content = readFileSync(htmlFile, "utf8");
   const links = [...content.matchAll(/href="(\/[^"]*)"/g)];
   for (const [, href] of links) {
     if (href === "/rss.xml" || href === "/site.webmanifest") continue;
     if (href.startsWith("/assets/")) continue;
+    // Skip static asset files (favicon, images, css, etc.) — these are not routes.
+    if (/\.[a-z0-9]{2,5}(?:\?.*)?$/i.test(href.split("#")[0])) continue;
     const target = href === "/" ? join(distDir, "index.html") : join(distDir, href, "index.html");
     const route = htmlFile.replace(distDir, "").replace(/\\/g, "/").replace(/\/index\.html$/, "/");
     test(`${route} → ${href}`, () => {
@@ -170,8 +180,13 @@ console.log("\n10. Table of Contents:");
 for (const f of articlePages.slice(0, 3)) {
   const c = readFileSync(f, "utf8");
   const slug = f.replace(/\\/g, "/").match(/blog\/([^/]+)/)?.[1] || "";
-  test(`${slug} has TOC`, () => {
-    assert.match(c, /class="toc"/);
+  test(`${slug} has TOC when headings exist`, () => {
+    const hasHeadings = /<h[23][\s>]/.test(c);
+    if (hasHeadings) {
+      assert.match(c, /class="toc"/, `Expected TOC but page has headings without one`);
+    } else {
+      console.log(`    (${slug} has no h2/h3 headings — TOC not required)`);
+    }
   });
 }
 

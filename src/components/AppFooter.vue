@@ -1,6 +1,22 @@
 <script setup lang="ts">
+import { computed } from "vue";
 import { siteConfig } from "../site.config";
 import { t } from "../i18n";
+
+const legalText = computed(() => {
+  const parts: string[] = [];
+  if (siteConfig.orgName) {
+    let prefix = siteConfig.orgName;
+    if (siteConfig.inn) prefix += `, ${t.footer.inn}: ${siteConfig.inn}`;
+    if (siteConfig.addressLegal) prefix += `, ${siteConfig.addressLegal}`;
+    parts.push(prefix);
+  } else if (siteConfig.addressLegal) {
+    parts.push(siteConfig.addressLegal);
+  }
+  if (siteConfig.phone1) parts.push(`${t.footer.phone}: ${siteConfig.phone1}`);
+  if (siteConfig.email1) parts.push(`${t.footer.email}: ${siteConfig.email1}`);
+  return parts.length ? parts.join(". ") + "." : "";
+});
 </script>
 
 <template>
@@ -35,12 +51,16 @@ import { t } from "../i18n";
           <ul class="footer-links">
             <li><RouterLink to="/contact/">{{ t.footer.contact }}</RouterLink></li>
             <li><RouterLink to="/templates/">{{ t.footer.templates }}</RouterLink></li>
+            <li><RouterLink to="/privacy/">{{ t.footer.privacy }}</RouterLink></li>
             <li><a href="/rss.xml">{{ t.footer.rss }}</a></li>
           </ul>
         </div>
       </div>
       <div class="footer-bottom">
         <p>&copy; {{ new Date().getFullYear() }} {{ siteConfig.name }}</p>
+      </div>
+      <div class="footer-legal">
+        <span>{{ legalText }}</span>
       </div>
     </div>
   </footer>
@@ -88,5 +108,14 @@ import { t } from "../i18n";
 .social-link {
   font-size: 13px;
   padding: 2px 0;
+}
+
+.footer-legal {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  font-size: 11px;
+  opacity: 0.35;
+  line-height: 1.6;
 }
 </style>

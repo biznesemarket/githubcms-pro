@@ -43,6 +43,7 @@ const coreFiles = [
   "package.json",
   "vite.config.ts",
   "tsconfig.json",
+  "site-tree.config.yaml",
   "index.html",
   "favicon.svg",
   "favicon*.png",

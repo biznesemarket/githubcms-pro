@@ -30,27 +30,37 @@ console.log("=== Stage 3: Security Tests ===\n");
 
 console.log("XSS prevention in meta tags:");
 
-const htmlFiles = collectHtmlFiles(distDir).slice(0, 5);
+// 2.3 Increased coverage from 5 to 30 random HTML files
+const allHtmlFiles = collectHtmlFiles(distDir);
+const htmlFiles = allHtmlFiles.sort(() => Math.random() - 0.5).slice(0, 30);
 
 for (const file of htmlFiles) {
   const content = readFileSync(file, "utf8");
   const route = file.replace(distDir, "").replace(/\\/g, "/").replace(/\/index\.html$/, "/");
 
   test(`${route} no <script> outside JSON-LD`, () => {
-    // Count script tags: only JSON-LD scripts allowed
-    const scripts = content.match(/<script[^>]*>/g) || [];
-    const ldScripts = content.match(/application\/ld\+json/g) || [];
+    // Only JSON-LD scripts, module scripts and the known payment-integration
+    // scripts (Tinkoff integration.js + its inline bootstrap) are allowed.
+    const scriptBlocks = content.match(/<script[^>]*>[\s\S]*?<\/script>/g) || [];
+    const ldScripts = content.match(/<script\s+type="application\/ld\+json"[^>]*>/g) || [];
     const moduleScripts = content.match(/type="module"/g) || [];
-    assert.strictEqual(scripts.length, ldScripts.length + moduleScripts.length,
-      `Found ${scripts.length} scripts, expected ${ldScripts.length + moduleScripts.length}`);
+    const paymentBlocks = scriptBlocks.filter((block) => /integration\.js|onPaymentIntegrationLoad|TINKOFF_TERMINAL_KEY/.test(block));
+    assert.strictEqual(scriptBlocks.length, ldScripts.length + moduleScripts.length + paymentBlocks.length,
+      `Found ${scriptBlocks.length} scripts, expected ${ldScripts.length + moduleScripts.length + paymentBlocks.length}`);
   });
 
   test(`${route} no inline event handlers`, () => {
-    assert.ok(!content.match(/\son\w+\s*=\s*["']/g), "Found inline event handler");
+    // The only allowed inline handler is the payment integration bootstrap
+    // (onload on the external Tinkoff script). Everything else is forbidden.
+    const handlers = content.match(/\son\w+\s*=\s*["']/g) || [];
+    const allowed = content.match(/onload="onPaymentIntegrationLoad\(\)"/g) || [];
+    assert.strictEqual(handlers.length, allowed.length, "Found inline event handler");
   });
 
   test(`${route} no javascript: URLs`, () => {
-    assert.ok(!content.match(/javascript\s*:/gi), "Found javascript: URL");
+    // Only flag javascript: used in actual URL attributes (href/src), not
+    // prose that mentions the scheme (e.g. docs describing blocked URLs).
+    assert.ok(!content.match(/(?:href|src|action)\s*=\s*["']\s*javascript\s*:/gi), "Found javascript: URL");
   });
 
   test(`${route} meta tags properly escaped`, () => {
@@ -86,7 +96,7 @@ console.log("\nCSP and security headers:");
 
 const indexContent = readFileSync(join(distDir, "index.html"), "utf8");
 
-test("meta viewport disables user scaling", () => {
+test("meta viewport present for responsive design", () => {
   assert.match(indexContent, /viewport/);
 });
 

@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#19202a" />
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://integrationjs.t-static.ru; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://pixinlink.ru; frame-src https://securepay.tinkoff.ru; connect-src 'self'; base-uri 'self';" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'unsafe-inline' https://*.t-static.ru https://*.tbank.ru https://*.tinkoff.ru https://*.tcsbank.ru https://*.nspk.ru; style-src 'self' 'unsafe-inline' https://*.tinkoff.ru https://*.tbank.ru https://*.tcsbank.ru https://*.nspk.ru https://*.t-static.ru; img-src 'self' data: https://pixinlink.ru https://pixinlink.com https://*.tinkoff.ru https://*.tbank.ru; connect-src 'self' https://*.t-static.ru https://*.tinkoff.ru https://*.tbank.ru https://*.tcsbank.ru https://*.nspk.ru; frame-src https://*.tbank.ru https://*.tinkoff.ru; manifest-src 'self'; base-uri 'self';" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
     <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
@@ -14,6 +14,23 @@
   </head>
   <body>
     <div id="app"></div>
+    <div id="paymentContainer" style="display:none"></div>
+    <script>
+      window.onPaymentIntegrationLoad = function() {
+        PaymentIntegration.init({
+          terminalKey: '1780060331835DEMO',
+          product: 'eacq',
+          features: { iframe: {} }
+        }).then(function(int) {
+          window.__tinkoffIntegration = int;
+          window.__tinkoffReady = true;
+        }).catch(function(e) {
+          console.error('Tinkoff init error:', e);
+        });
+      };
+    </script>
+    
+    <script src="https://integrationjs.t-static.ru/integration.js" onload="onPaymentIntegrationLoad()" async></script>
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>

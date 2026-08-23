@@ -1,5 +1,5 @@
 import { strict as assert } from "node:assert";
-import { generateSchema } from "../src/schema/index.ts";
+import { generateSchema } from "../../src/schema/index.ts";
 
 let passed = 0;
 let failed = 0;
@@ -36,7 +36,7 @@ console.log("generateSchema() for articles:");
 
 test("returns Article schema", () => {
   const schemas = generateSchema({
-    url: "https://githubcms.com/blog/test-article/",
+    url: "https://example.com/blog/test-article/",
     path: "/blog/test-article/",
     title: "Test Article",
     description: "Test description",
@@ -54,7 +54,7 @@ test("returns Article schema", () => {
 
 test("Article includes datePublished from frontmatter", () => {
   const schemas = generateSchema({
-    url: "https://githubcms.com/blog/test-article/",
+    url: "https://example.com/blog/test-article/",
     path: "/blog/test-article/",
     title: "Test Article",
     description: "Test description",
@@ -68,7 +68,7 @@ test("Article includes datePublished from frontmatter", () => {
 
 test("Article includes author as Person", () => {
   const schemas = generateSchema({
-    url: "https://githubcms.com/blog/test-article/",
+    url: "https://example.com/blog/test-article/",
     path: "/blog/test-article/",
     title: "Test Article",
     description: "",
@@ -83,7 +83,7 @@ test("Article includes author as Person", () => {
 
 test("generates schema for website type", () => {
   const schemas = generateSchema({
-    url: "https://githubcms.com/",
+    url: "https://example.com/",
     path: "/",
     title: "GitHub CMS",
     description: "Test site",

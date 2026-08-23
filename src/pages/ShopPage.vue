@@ -103,6 +103,26 @@ useSeo(() => ({
     </div>
   </section>
 
+  <!-- PAYMENT & SECURITY -->
+  <section class="py-4">
+    <div class="container">
+      <div class="text-center mb-3">
+        <h2 class="fw-bold" style="font-size:22px">{{ t.paymentSecurityTitle }}</h2>
+        <p class="text-muted mx-auto" style="font-size:14px;max-width:650px">{{ t.paymentSecurityDesc }}</p>
+      </div>
+      <div class="d-flex flex-wrap justify-content-center align-items-center gap-4 py-2">
+        <a :href="t.tbankLink" target="_blank" rel="noopener noreferrer" class="payment-bank-logo">T-Bank</a>
+        <span class="payment-card-logo">Visa</span>
+        <span class="payment-card-logo">Mastercard</span>
+        <span class="payment-card-logo">МИР</span>
+        <span class="payment-card-logo">T-Pay</span>
+      </div>
+      <p class="text-center mt-3" style="font-size:12px;color:var(--color-text-muted)">
+        {{ t.securityDesc }} <RouterLink to="/privacy/" style="color:var(--color-accent)">{{ t.footer.privacy }}</RouterLink>.
+      </p>
+    </div>
+  </section>
+
   <!-- CTA -->
   <section class="py-4 text-center text-white" style="background:linear-gradient(135deg,#0f0720,#2d1060)">
     <div class="container py-3">
@@ -115,4 +135,28 @@ useSeo(() => ({
 </template>
 
 <style scoped>
+.payment-bank-logo {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 16px;
+  border-radius: 8px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  font-weight: 700;
+  font-size: 14px;
+  color: var(--color-text);
+  text-decoration: none;
+  transition: background 0.2s;
+}
+.payment-bank-logo:hover { background: var(--color-bg-muted); }
+.payment-card-logo {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 14px;
+  border-radius: 8px;
+  background: var(--color-bg-muted);
+  font-weight: 600;
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
 </style>

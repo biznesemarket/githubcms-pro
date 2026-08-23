@@ -5,6 +5,9 @@ export interface ProductEn {
   specs: { n: string; v: string }[]
   faq: { q: string; a: string }[]
   revs: { a: string; r: number; t: string; d: string }[]
+  bens?: { icon: string; title: string; d: string }[]
+  htu?: { s: number; t: string; d: string }[]
+  sectionTitle?: string
 }
 
 export const productEn: Record<string, ProductEn> = {
@@ -15,6 +18,9 @@ export const productEn: Record<string, ProductEn> = {
     specs: [{n:"Processor",v:"Snapdragon 8 Gen4 (3nm)"},{n:"Display",v:'6.9" AMOLED 2X, 120Hz'},{n:"Camera",v:"200+50+12 MP, 100× Zoom"},{n:"Battery",v:"5500 mAh, 65W"},{n:"Memory",v:"16 GB / 512 GB"},{n:"Protection",v:"IP68, Gorilla Armor 2"}],
     faq: [{q:"Does it support eSIM?",a:"Yes, 2 eSIM + nano-SIM."},{q:"Android version?",a:"Android 16, 7 years of updates."},{q:"Charger included?",a:"No, block sold separately."}],
     revs: [{a:"Alex M.",r:5,t:"Low-light camera is like daylight.",d:"2026-04-15"},{a:"Marina K.",r:5,t:"Battery lasts 1.5 days.",d:"2026-04-20"}],
+    bens: [{icon:"📸",title:"AI Camera",d:"200 MP"},{icon:"🔋",title:"Battery Life",d:"Up to 2 days"},{icon:"🖊️",title:"S Pen",d:"Built-in"},{icon:"🛡️",title:"Durability",d:"Titanium + Gorilla Armor 2"}],
+    htu: [{s:1,t:"Unbox",d:"Press and hold button for 3 sec"},{s:2,t:"Smart Switch",d:"Transfer data in 10 minutes"}],
+    sectionTitle: "Electronics",
   },
   "macbook-air-m4": {
     name: "MacBook Air M4",
@@ -23,6 +29,9 @@ export const productEn: Record<string, ProductEn> = {
     specs: [{n:"Processor",v:"Apple M4 12CPU/18GPU"},{n:"Display",v:'15.3" Liquid Retina'},{n:"Memory",v:"16 GB / 512 GB"},{n:"Weight",v:"1.3 kg"}],
     faq: [{q:"External monitor?",a:"Yes, 2 monitors 6K."}],
     revs: [{a:"Ivan P.",r:5,t:"Docker, 3 monitors — flies.",d:"2026-04-10"},{a:"Olga S.",r:5,t:"Figma without lag.",d:"2026-04-25"}],
+    bens: [{icon:"⚡",title:"M4 Chip",d:"+40% vs M3"},{icon:"🔋",title:"18 Hours",d:"All-day battery"},{icon:"🪶",title:"2.9 lbs",d:"Ultra-light"}],
+    htu: [{s:1,t:"Open the lid",d:"Turns on automatically"}],
+    sectionTitle: "Electronics",
   },
   "ipad-pro-m4": {
     name: "iPad Pro M4",
@@ -31,6 +40,9 @@ export const productEn: Record<string, ProductEn> = {
     specs: [{n:"Display",v:'11" OLED, 1600 nits'},{n:"Processor",v:"Apple M4"},{n:"Memory",v:"16 GB / 1 TB"}],
     faq: [{q:"Can it replace a laptop?",a:"Yes, for design and study."}],
     revs: [{a:"Elena D.",r:5,t:"OLED is a breakthrough.",d:"2026-05-01"}],
+    bens: [{icon:"🎨",title:"OLED",d:"1600 nits"},{icon:"✏️",title:"Pencil Pro",d:"Haptic feedback"}],
+    htu: [{s:1,t:"Set up",d:"Bring your iPhone close"}],
+    sectionTitle: "Electronics",
   },
   "airpods-pro-3": {
     name: "AirPods Pro 3",
@@ -39,6 +51,9 @@ export const productEn: Record<string, ProductEn> = {
     specs: [{n:"Chip",v:"Apple H3"},{n:"ANC",v:"Up to 48 dB"},{n:"Battery",v:"8 h + 28 h"},{n:"Protection",v:"IP54"}],
     faq: [{q:"Works with Android?",a:"Yes, as Bluetooth."}],
     revs: [{a:"Anna S.",r:5,t:"Quiet on the subway. 7+ hours.",d:"2026-04-18"}],
+    bens: [{icon:"🔇",title:"ANC 48 dB",d:"Best in class"}],
+    htu: [{s:1,t:"Open the case",d:"Animation on iPhone"}],
+    sectionTitle: "Electronics",
   },
   "watch-ultra-2": {
     name: "Watch Ultra 2",
@@ -47,6 +62,9 @@ export const productEn: Record<string, ProductEn> = {
     specs: [{n:"Body",v:"Titanium alloy"},{n:"Diving",v:"100m"},{n:"Battery",v:"5 days"},{n:"Sensors",v:"ECG + SpO2 + GPS"}],
     faq: [{q:"Without iPhone?",a:"Yes, standalone."}],
     revs: [{a:"Pavel G.",r:5,t:"ECG accurate. Battery 5 days.",d:"2026-04-22"}],
+    bens: [{icon:"🏊",title:"Diving",d:"Certified"},{icon:"❤️",title:"ECG+SpO2",d:"Medical grade"}],
+    htu: [{s:1,t:"Put it on",d:"Turns on automatically"}],
+    sectionTitle: "Electronics",
   },
   "power-bank-20000": {
     name: "Power Bank 20000 mAh",
@@ -55,6 +73,9 @@ export const productEn: Record<string, ProductEn> = {
     specs: [{n:"Capacity",v:"20000 mAh"},{n:"Ports",v:"USB-C 65W + 2×USB-A"},{n:"Weight",v:"380g"}],
     faq: [{q:"How many charges?",a:"4-5 full smartphone charges."}],
     revs: [{a:"Roman T.",r:5,t:"Charged MacBook to 80% in an hour.",d:"2026-04-30"}],
+    bens: [{icon:"⚡",title:"65W PD",d:"Charges your laptop"}],
+    htu: [{s:1,t:"Connect",d:"Any USB-C cable"}],
+    sectionTitle: "Electronics",
   },
   "lg-side-by-side": {
     name: "LG Side-by-Side Fridge",
@@ -63,6 +84,7 @@ export const productEn: Record<string, ProductEn> = {
     specs: [{n:"Capacity",v:"647 L"},{n:"Compressor",v:"Inverter"},{n:"Wi-Fi",v:"SmartThings"}],
     faq: [],
     revs: [{a:"Tatiana V.",r:5,t:"Quiet and spacious.",d:"2026-04-12"}],
+    sectionTitle: "Home Appliances",
   },
   "bosch-washing": {
     name: "Bosch Serie 6 Washer",
@@ -71,6 +93,7 @@ export const productEn: Record<string, ProductEn> = {
     specs: [{n:"Load",v:"10 kg"},{n:"Motor",v:"EcoSilence Drive"},{n:"Spin",v:"1600 rpm"}],
     faq: [],
     revs: [{a:"Svetlana P.",r:5,t:"Quiet, cleans well.",d:"2026-04-28"}],
+    sectionTitle: "Home Appliances",
   },
   "xiaomi-x10": {
     name: "Xiaomi X10+ Robot Vacuum",
@@ -79,6 +102,7 @@ export const productEn: Record<string, ProductEn> = {
     specs: [{n:"Suction",v:"6000 Pa"},{n:"Navigation",v:"LDS Lidar"},{n:"Dock",v:"Self-cleaning"}],
     faq: [],
     revs: [{a:"Andrey K.",r:5,t:"Map is accurate.",d:"2026-05-05"}],
+    sectionTitle: "Home Appliances",
   },
   "samsung-microwave": {
     name: "Samsung MG Microwave",
@@ -87,6 +111,7 @@ export const productEn: Record<string, ProductEn> = {
     specs: [{n:"Capacity",v:"28 L"},{n:"Power",v:"900 W"}],
     faq: [],
     revs: [{a:"Oleg M.",r:4,t:"Good microwave.",d:"2026-05-03"}],
+    sectionTitle: "Home Appliances",
   },
   "electrolux-stove": {
     name: "Electrolux Induction Stove",
@@ -95,6 +120,7 @@ export const productEn: Record<string, ProductEn> = {
     specs: [{n:"Burners",v:"4 (induction)"},{n:"Power",v:"7400 W"}],
     faq: [],
     revs: [],
+    sectionTitle: "Home Appliances",
   },
   "bosch-dishwasher": {
     name: "Bosch SMV Dishwasher",
@@ -103,6 +129,7 @@ export const productEn: Record<string, ProductEn> = {
     specs: [{n:"Settings",v:"14"},{n:"Programs",v:"8"},{n:"Noise",v:"44 dB"}],
     faq: [],
     revs: [],
+    sectionTitle: "Home Appliances",
   },
   "sofa-milan": {
     name: "Milan Corner Sofa",
@@ -111,6 +138,9 @@ export const productEn: Record<string, ProductEn> = {
     specs: [{n:"Size",v:"280×180 cm"},{n:"Upholstery",v:"Grey velour"},{n:"Sleeper",v:"160×200 cm"}],
     faq: [],
     revs: [{a:"Evgeny D.",r:5,t:"Comfortable sofa. Soft velour.",d:"2026-04-30"}],
+    bens: [{icon:"🛋️",title:"Velour",d:"Soft to the touch"},{icon:"📦",title:"Storage",d:"Built-in drawer"}],
+    htu: [{s:1,t:"Assemble the frame",d:"Attach side panels to the base (bolts included)"},{s:2,t:"Place the cushions",d:"Position seats and backrests, secure with Velcro"}],
+    sectionTitle: "Furniture",
   },
   "table-loft": {
     name: "Loft Dining Table",
@@ -119,6 +149,9 @@ export const productEn: Record<string, ProductEn> = {
     specs: [{n:"Size",v:"160×90 cm"},{n:"Material",v:"Solid oak"},{n:"Seats",v:"6-8"}],
     faq: [],
     revs: [],
+    bens: [{icon:"🪵",title:"Solid Oak",d:"50+ years lifespan"},{icon:"💪",title:"440 lbs",d:"Max load capacity"}],
+    htu: [{s:1,t:"Attach the legs",d:"4 bolts per leg, wrench included"},{s:2,t:"Level it",d:"Adjustable feet compensate for uneven floors"}],
+    sectionTitle: "Furniture",
   },
   "ergo-chair": {
     name: "Ergo Pro Office Chair",
@@ -127,6 +160,9 @@ export const productEn: Record<string, ProductEn> = {
     specs: [{n:"Backrest",v:"Mesh"},{n:"Armrests",v:"4D adjustable"},{n:"Load",v:"Up to 130 kg"}],
     faq: [],
     revs: [{a:"Nikolay B.",r:5,t:"Back stopped hurting after 8-hour days.",d:"2026-04-25"}],
+    bens: [{icon:"🪑",title:"4D Armrests",d:"Full adjustability"},{icon:"💨",title:"Mesh Back",d:"Breathable, no sweat"}],
+    htu: [{s:1,t:"Assemble the base",d:"Wheels → base → gas lift"},{s:2,t:"Attach the seat",d:"4 screws, hex key included"}],
+    sectionTitle: "Furniture",
   },
   "wardrobe-premium": {
     name: "Premium Wardrobe",
@@ -135,6 +171,9 @@ export const productEn: Record<string, ProductEn> = {
     specs: [{n:"Size",v:"240×220×65 cm"},{n:"Doors",v:"Mirrored"},{n:"Sections",v:"3"}],
     faq: [],
     revs: [],
+    bens: [{icon:"🪞",title:"Mirrors",d:"Visually expand the room"},{icon:"💡",title:"LED",d:"Auto-on when opened"}],
+    htu: [{s:1,t:"Assemble the cabinet",d:"Side panels + bottom + top, confirmat screws"},{s:2,t:"Hang the doors",d:"Upper and lower rails, rollers"}],
+    sectionTitle: "Furniture",
   },
   "bed-oslo": {
     name: "Oslo Bed",
@@ -143,6 +182,9 @@ export const productEn: Record<string, ProductEn> = {
     specs: [{n:"Size",v:"180×200 cm"},{n:"Upholstery",v:"Eco-leather"},{n:"Mechanism",v:"Lift"}],
     faq: [],
     revs: [],
+    bens: [{icon:"📦",title:"Lift Mechanism",d:"Storage compartment"},{icon:"💡",title:"LED Headboard",d:"Soft ambient light"}],
+    htu: [{s:1,t:"Assemble the frame",d:"Side panels + headboard, M8 bolts"},{s:2,t:"Install the slats",d:"Into the slots, evenly spaced"}],
+    sectionTitle: "Furniture",
   },
   "dresser-scandi": {
     name: "Scandi Dresser",
@@ -151,6 +193,9 @@ export const productEn: Record<string, ProductEn> = {
     specs: [{n:"Size",v:"120×80×45 cm"},{n:"Material",v:"White melamine"},{n:"Drawers",v:"6"}],
     faq: [],
     revs: [],
+    bens: [{icon:"📐",title:"6 Drawers",d:"Full extension"},{icon:"🪶",title:"Compact",d:"18 inch depth"}],
+    htu: [{s:1,t:"Assemble the cabinet",d:"Confirmat screws, hex key"},{s:2,t:"Install the drawers",d:"Onto the rails, snap into place"}],
+    sectionTitle: "Furniture",
   },
   "kettler-tr1": {
     name: "Kettler TR1 Treadmill",
@@ -159,6 +204,9 @@ export const productEn: Record<string, ProductEn> = {
     specs: [{n:"Motor",v:"3.5 HP"},{n:"Speed",v:"0.5-20 km/h"},{n:"Programs",v:"12"}],
     faq: [],
     revs: [{a:"Alexander S.",r:5,t:"Quiet, powerful. 12 programs enough.",d:"2026-04-20"}],
+    bens: [{icon:"🏃",title:"Cushioning",d:"8 elastomers protect your joints"},{icon:"📊",title:"12 Programs",d:"Cardio, fat burn, intervals"}],
+    htu: [{s:1,t:"Unbox and assemble",d:"2 people, 60 minutes. Tools included"},{s:2,t:"Plug into outlet",d:"220V, 16A. Grounded outlet required"}],
+    sectionTitle: "Sports & Outdoors",
   },
   "trek-bike": {
     name: "Trek X-Caliber Bike",
@@ -167,6 +215,9 @@ export const productEn: Record<string, ProductEn> = {
     specs: [{n:"Frame",v:"Alpha Gold Aluminum"},{n:"Wheels",v:'29"'},{n:"Fork",v:"RockShox 100mm"}],
     faq: [],
     revs: [],
+    bens: [{icon:"🚵",title:'29" Wheels',d:"Best rollover on rough terrain"},{icon:"🔧",title:"Shimano Deore",d:"Reliable drivetrain"}],
+    htu: [{s:1,t:"Assembly from box",d:"Install front wheel, handlebar, and pedals. 15 minutes"}],
+    sectionTitle: "Sports & Outdoors",
   },
   "salomon-tent": {
     name: "Salomon 3-Person Tent",
@@ -175,6 +226,9 @@ export const productEn: Record<string, ProductEn> = {
     specs: [{n:"Capacity",v:"3 persons"},{n:"Weight",v:"2.8 kg"},{n:"Waterproof",v:"5000 mm"}],
     faq: [],
     revs: [],
+    bens: [{icon:"⛺",title:"5000 mm",d:"Withstands heavy rain"},{icon:"🪶",title:"6.2 lbs",d:"Lightweight for trekking"}],
+    htu: [{s:1,t:"Lay out and stake",d:"4 stakes at bottom corners"},{s:2,t:"Insert the poles",d:"Thread through sleeves, secure in grommets"}],
+    sectionTitle: "Sports & Outdoors",
   },
   "nike-zoom": {
     name: "Nike Air Zoom Shoes",
@@ -183,6 +237,9 @@ export const productEn: Record<string, ProductEn> = {
     specs: [{n:"Cushioning",v:"Zoom Air"},{n:"Upper",v:"Flyknit"},{n:"Weight",v:"280 g"}],
     faq: [],
     revs: [],
+    bens: [{icon:"👟",title:"Zoom Air",d:"Responsive cushioning"},{icon:"🍃",title:"9.9 oz",d:"Nearly weightless"}],
+    htu: [{s:1,t:"Try them on",d:"True to size. For wide feet, go up 0.5 size"}],
+    sectionTitle: "Sports & Outdoors",
   },
   "protein-on": {
     name: "Optimum Nutrition Protein",
@@ -191,6 +248,9 @@ export const productEn: Record<string, ProductEn> = {
     specs: [{n:"Weight",v:"2.27 kg"},{n:"Protein",v:"24 g / 30 g"},{n:"Flavor",v:"Chocolate"}],
     faq: [],
     revs: [],
+    bens: [{icon:"💪",title:"24g Protein",d:"Per serving"},{icon:"🍫",title:"Flavor",d:"Natural chocolate"}],
+    htu: [{s:1,t:"Mix it",d:"1 scoop + 250 ml water or milk"}],
+    sectionTitle: "Sports & Outdoors",
   },
   "garmin-venu": {
     name: "Garmin Venu 3",
@@ -199,6 +259,9 @@ export const productEn: Record<string, ProductEn> = {
     specs: [{n:"Display",v:'AMOLED 1.4"'},{n:"GPS",v:"Multi-band"},{n:"Battery",v:"14 days"}],
     faq: [],
     revs: [],
+    bens: [{icon:"⌚",title:"AMOLED",d:"Bright always-on display"},{icon:"🔋",title:"14 Days",d:"Without charging"}],
+    htu: [{s:1,t:"Turn on and wear",d:"Long press the button. Pair: Garmin Connect"}],
+    sectionTitle: "Sports & Outdoors",
   },
   "svetocopy-paper": {
     name: "SvetoCopy A4 Paper",
@@ -207,6 +270,9 @@ export const productEn: Record<string, ProductEn> = {
     specs: [{n:"Format",v:"A4"},{n:"Density",v:"80 g/m²"},{n:"Class",v:"A+"}],
     faq: [],
     revs: [],
+    bens: [{icon:"📄",title:"A+ Grade",d:"99.9% compatibility, no jams"}],
+    htu: [{s:1,t:"Load into the tray",d:"Fan the stack before loading"}],
+    sectionTitle: "Stationery & Office",
   },
   "parker-jotter": {
     name: "Parker Jotter Pen",
@@ -215,6 +281,9 @@ export const productEn: Record<string, ProductEn> = {
     specs: [{n:"Material",v:"Stainless steel"},{n:"Ink",v:"Blue"}],
     faq: [],
     revs: [],
+    bens: [{icon:"🖊️",title:"Parker",d:"Classic since 1954"},{icon:"✨",title:"Stainless Steel",d:"Scratch-resistant"}],
+    htu: [{s:1,t:"Click the button",d:"One click extends the refill"}],
+    sectionTitle: "Stationery & Office",
   },
   "desk-organizer": {
     name: "Desk Organizer",
@@ -223,6 +292,9 @@ export const productEn: Record<string, ProductEn> = {
     specs: [{n:"Material",v:"Bamboo"},{n:"Compartments",v:"4"},{n:"Rotation",v:"360°"}],
     faq: [],
     revs: [],
+    bens: [{icon:"🎯",title:"360°",d:"Instant access to everything"}],
+    htu: [{s:1,t:"Place on desk",d:"Rubberized base — non-slip"}],
+    sectionTitle: "Stationery & Office",
   },
   "hp-laserjet": {
     name: "HP LaserJet M234",
@@ -231,6 +303,9 @@ export const productEn: Record<string, ProductEn> = {
     specs: [{n:"Type",v:"Monochrome laser"},{n:"Speed",v:"29 ppm"},{n:"Duplex",v:"Auto"}],
     faq: [],
     revs: [],
+    bens: [{icon:"🖨️",title:"29 ppm",d:"First page in 7 seconds"},{icon:"📡",title:"Wi-Fi",d:"Print from your phone"}],
+    htu: [{s:1,t:"Connect",d:"Wi-Fi via HP Smart or USB to PC"},{s:2,t:"Load paper",d:"Into the 150-sheet tray"}],
+    sectionTitle: "Stationery & Office",
   },
   "epson-projector": {
     name: "Epson EB-X51 Projector",
@@ -239,6 +314,9 @@ export const productEn: Record<string, ProductEn> = {
     specs: [{n:"Brightness",v:"3800 lumens"},{n:"Resolution",v:"XGA 1024×768"},{n:"Contrast",v:"16000:1"}],
     faq: [],
     revs: [],
+    bens: [{icon:"🔆",title:"3800 Lumens",d:"Visible in daylight"},{icon:"📽️",title:'300"',d:"Cinema experience at the office"}],
+    htu: [{s:1,t:"Connect the source",d:"HDMI to laptop or VGA to PC"},{s:2,t:"Adjust focus",d:"Focus ring on the lens"}],
+    sectionTitle: "Stationery & Office",
   },
   "rexel-shredder": {
     name: "Rexel Auto+ 100X Shredder",
@@ -247,5 +325,8 @@ export const productEn: Record<string, ProductEn> = {
     specs: [{n:"Auto-feed",v:"100 sheets"},{n:"Fragments",v:"4×40 mm"},{n:"Security",v:"P-4"}],
     faq: [],
     revs: [],
+    bens: [{icon:"🔒",title:"P-4",d:"Confidential security level"}],
+    htu: [{s:1,t:"Load paper",d:"Up to 100 sheets in auto-feed"}],
+    sectionTitle: "Stationery & Office",
   },
 };

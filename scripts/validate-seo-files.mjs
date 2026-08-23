@@ -4,7 +4,12 @@ import matter from "gray-matter";
 
 const args = process.argv.slice(2);
 const dirIndex = args.indexOf("--dir");
-const outputDir = path.resolve(dirIndex === -1 ? "dist" : args[dirIndex + 1]);
+const rawDir = dirIndex === -1 ? "dist" : args[dirIndex + 1];
+if (!rawDir || rawDir.startsWith("--")) {
+  console.error("Error: --dir requires a directory path argument.");
+  process.exit(1);
+}
+const outputDir = path.resolve(rawDir);
 const locale = process.env.VITE_LOCALE || "ru";
 const edition = process.env.VITE_EDITION || "free";
 const isPro = edition === "pro";
@@ -110,6 +115,7 @@ function validateHealthz(healthz) {
 }
 
 function readArticleRoutes() {
+  if (!existsSync(contentDir)) return [];
   return readdirSync(contentDir)
     .filter((file) => file.endsWith(".md"))
     .map((file) => {
@@ -131,26 +137,45 @@ function readArticleRoutes() {
 }
 
 function readPageRoutes() {
-  if (!existsSync(pagesDir)) return [];
+  const localeDir = path.join(process.cwd(), "content", locale);
+  const seenSlugs = new Set();
+  const routes = [];
 
-  return readdirSync(pagesDir)
-    .filter((file) => file.endsWith(".md"))
-    .map((file) => {
+  // Method 1: Legacy flat pages/ dir
+  if (existsSync(pagesDir)) {
+    for (const file of readdirSync(pagesDir).filter((f) => f.endsWith(".md"))) {
       const source = readFileSync(path.join(pagesDir, file), "utf8");
       const parsed = matter(source);
       const slug = String(parsed.data.slug ?? "").trim();
+      if (!slug) { fail(`Missing slug in content/pages/${file}.`); continue; }
+      if (seenSlugs.has(slug)) continue;
+      seenSlugs.add(slug);
+      routes.push({ path: `/${slug}/`, lastmod: toLastmod(parsed.data.updated ?? parsed.data.date) });
+    }
+  }
 
-      if (!slug) {
-        fail(`Missing slug in content/pages/${file}.`);
+  // Method 2: New folder-based structure
+  const skipDirs = new Set(["blog", "pages", "templates"]);
+  if (existsSync(localeDir)) {
+    for (const entry of readdirSync(localeDir, { withFileTypes: true })) {
+      if (!entry.isDirectory() || skipDirs.has(entry.name)) continue;
+      const sectionDir = path.join(localeDir, entry.name);
+      if (!existsSync(sectionDir)) continue;
+      for (const file of readdirSync(sectionDir).filter((f) => f.endsWith(".md"))) {
+        const source = readFileSync(path.join(sectionDir, file), "utf8");
+        const parsed = matter(source);
+        const layout = String(parsed.data.layout ?? "");
+        if (["product", "section", "shop"].includes(layout)) continue;
+        const slug = String(parsed.data.slug ?? "").trim();
+        if (!slug) { fail(`Missing slug in content/${locale}/${entry.name}/${file}.`); continue; }
+        if (seenSlugs.has(slug)) continue;
+        seenSlugs.add(slug);
+        routes.push({ path: `/${slug}/`, lastmod: toLastmod(parsed.data.updated ?? parsed.data.date) });
       }
+    }
+  }
 
-      return {
-        path: `/${slug}/`,
-        lastmod: toLastmod(parsed.data.updated ?? parsed.data.date),
-      };
-    })
-    .filter((route) => route.path !== "//")
-    .sort((a, b) => a.path.localeCompare(b.path));
+  return routes.filter((r) => r.path !== "//").sort((a, b) => a.path.localeCompare(b.path));
 }
 
 function readCategoryRoutes() {
@@ -212,19 +237,32 @@ const expectedRoutes = [
   ...readCategoryRoutes(),
   ...readTagRoutes(),
   ...readPaginationRoutes(),
-  ...(isPro ? [
-  // Shop routes
-  { path: "/shop/" },
-  ...["shop-section-1","shop-section-2","shop-section-3","shop-section-4","shop-section-5"].flatMap(s => [{ path: `/shop/${s}/` }]),
-  { path: "/shop/shop-section-1/galaxy-s25-ultra/" },
-  { path: "/shop/shop-section-1/macbook-air-m4/" },
-  { path: "/shop/shop-section-1/ipad-pro-m4/" },
-  { path: "/shop/shop-section-1/airpods-pro-3/" },
-  { path: "/shop/shop-section-1/watch-ultra-2/" },
-  { path: "/shop/shop-section-1/power-bank-20000/" },
-  { path: "/payment/success/" },
-  ] : []),
+  ...(isPro ? readShopRoutes() : []),
 ];
+
+function readShopRoutes() {
+  // Must match scripts/generate-seo-files.mjs (the sitemap source of truth).
+  const routes = [{ path: "/shop/" }, { path: "/payment/success/" }];
+  const shopSections = ["shop-section-1", "shop-section-2", "shop-section-3", "shop-section-4", "shop-section-5"];
+  for (const section of shopSections) {
+    routes.push({ path: `/shop/${section}/` });
+  }
+  const productSlugs = [
+    "galaxy-s25-ultra", "macbook-air-m4", "ipad-pro-m4", "airpods-pro-3", "watch-ultra-2", "power-bank-20000",
+    "lg-side-by-side", "bosch-washing", "xiaomi-x10", "samsung-microwave", "electrolux-stove", "bosch-dishwasher",
+    "sofa-milan", "table-loft", "ergo-chair", "wardrobe-premium", "bed-oslo", "dresser-scandi",
+    "kettler-tr1", "trek-bike", "salomon-tent", "nike-zoom", "protein-on", "garmin-venu",
+    "svetocopy-paper", "parker-jotter", "desk-organizer", "hp-laserjet", "epson-projector", "rexel-shredder",
+  ];
+  for (let i = 0; i < shopSections.length; i++) {
+    const section = shopSections[i];
+    const slugs = productSlugs.slice(i * 6, i * 6 + 6);
+    for (const slug of slugs) {
+      routes.push({ path: `/shop/${section}/${slug}/` });
+    }
+  }
+  return routes;
+}
 
 const robots = readTextFile(path.join(outputDir, "robots.txt"));
 const sitemap = readTextFile(path.join(outputDir, "sitemap.xml"));

@@ -2,6 +2,7 @@
 import AppNavbar from "./components/AppNavbar.vue";
 import AppFooter from "./components/AppFooter.vue";
 import BackToTop from "./components/BackToTop.vue";
+import CookieConsent from "./components/CookieConsent.vue";
 </script>
 
 <template>
@@ -9,4 +10,5 @@ import BackToTop from "./components/BackToTop.vue";
   <RouterView />
   <AppFooter />
   <BackToTop />
+  <CookieConsent />
 </template>

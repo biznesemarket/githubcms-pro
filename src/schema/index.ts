@@ -1,7 +1,7 @@
-import type { JsonLd, PageContext } from "./types"
-import { schemaConfig } from "./config"
-import * as lib from "./library"
-import { allDetectors } from "./detectors/index"
+import type { JsonLd, PageContext } from "./types.ts"
+import { schemaConfig } from "./config.ts"
+import * as lib from "./library.ts"
+import { allDetectors } from "./detectors/index.ts"
 
 export { lib, allDetectors, schemaConfig }
 export type { JsonLd, PageContext }

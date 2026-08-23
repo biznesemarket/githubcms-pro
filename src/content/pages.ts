@@ -1,12 +1,15 @@
-import { pages as generatedPages } from "../generated/pages";
-import type { ArticleFrontmatter } from "./articles";
+import { pages as generatedPages } from "../generated/pages.ts";
+import type { ArticleFrontmatter } from "./articles.ts";
+import type { MarkdownBlock } from "../markdown/blocks.mjs";
 
 export interface Page {
   path: string;
   frontmatter: ArticleFrontmatter;
   html: string;
-  blocks: Record<string, string>;
+  blocks: Record<string, MarkdownBlock>;
   readingTime: number;
+  isIndex: boolean;
+  rawHtml?: string;
 }
 
 export const pages: Page[] = generatedPages.map((page) => ({
@@ -19,6 +22,8 @@ export const pages: Page[] = generatedPages.map((page) => ({
   html: page.html,
   blocks: { ...page.blocks },
   readingTime: page.readingTime,
+  isIndex: page.isIndex ?? false,
+  rawHtml: (page as { rawHtml?: string }).rawHtml,
 }));
 
 export function findPageBySlug(slug: string): Page | undefined {

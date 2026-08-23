@@ -4,6 +4,52 @@ import { dirname, join, relative } from "node:path";
 const root = process.cwd();
 const failures = [];
 
+// Required CSS design tokens every theme must define (used by components).
+const requiredCssVariables = [
+  "--color-bg",
+  "--color-surface",
+  "--color-text",
+  "--color-text-secondary",
+  "--color-text-muted",
+  "--color-border",
+  "--color-accent",
+  "--color-accent-hover",
+  "--color-bg-muted",
+  "--color-tag-bg",
+  "--color-faq-bg",
+  "--color-faq-border",
+  "--font-primary",
+  "--font-heading",
+  "--radius-sm",
+  "--radius-md",
+  "--radius-lg",
+];
+
+function validateThemeContract(template, templatePath) {
+  const themeEntry = template.sourcePaths?.themeEntry;
+  if (!themeEntry) return;
+  const themeFile = join(root, themeEntry);
+  if (!existsSync(themeFile)) {
+    failures.push(`${template.id}: themeEntry does not exist: ${themeEntry}`);
+    return;
+  }
+  const source = readFileSync(themeFile, "utf8");
+
+  for (const variable of requiredCssVariables) {
+    if (!source.includes(variable)) {
+      failures.push(`${template.id}: theme.scss missing required CSS variable '${variable}'`);
+    }
+  }
+
+  // Forbid importing two CSS frameworks (e.g. Materialize + Bootstrap).
+  const frameworks = [];
+  if (/(@import|@use).*bootstrap|@import "bootstrap/i.test(source)) frameworks.push("bootstrap");
+  if (/(@import|@use).*materialize|materialize\.css/i.test(source)) frameworks.push("materialize");
+  if (frameworks.length > 1) {
+    failures.push(`${template.id}: theme.scss imports multiple CSS frameworks (${frameworks.join(", ")}) — exactly one is allowed`);
+  }
+}
+
 function rel(path) {
   return relative(root, path).replace(/\\/g, "/");
 }
@@ -206,6 +252,7 @@ if (!registry) {
 
     validateGeoFiles(template);
     validatePromptPack(template, path);
+    validateThemeContract(template, path);
   }
 
   if (!ids.has(registry.defaultFreeTemplate)) {

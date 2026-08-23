@@ -82,7 +82,6 @@ function assertEditionOutput() {
 
   if (edition === "free") {
     assertPath("dist/shop", false);
-    assertPath("dist/account", false);
     assertPath("dist/payment", false);
     assertPath("dist/home/2", false);
     assertPath("dist/templates/purple-geo", false);
@@ -92,13 +91,11 @@ function assertEditionOutput() {
       "Purple GEO Pro",
       "Tech Azure",
       "ShopPage",
-      "AccountPlan",
       "PaymentSuccess",
       "purple-geo-pro",
     ]);
   } else {
     assertPath("dist/shop/index.html", true);
-    assertPath("dist/account/index.html", true);
     assertPath("dist/payment/success/index.html", true);
     assertPath("dist/home/2/index.html", true);
     assertPath("dist/templates/purple-geo/index.html", true);

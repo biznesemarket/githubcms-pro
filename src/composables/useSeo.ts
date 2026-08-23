@@ -1,8 +1,8 @@
-import { useHead, useServerSeoMeta } from "@unhead/vue";
+import { useHead, useSeoMeta } from "@unhead/vue";
 import { computed, toValue, type MaybeRefOrGetter } from "vue";
-import { siteConfig } from "../site.config";
-import { generateSchema } from "../schema";
-import type { Article } from "../content/articles";
+import { siteConfig } from "../site.config.ts";
+import { generateSchema } from "../schema/index.ts";
+import type { Article } from "../content/articles.ts";
 
 export interface SeoInput {
   title: string;
@@ -56,7 +56,7 @@ export function useSeo(input: MaybeRefOrGetter<SeoInput>) {
     link: [{ rel: "canonical", href: () => resolved.value.canonical }],
   });
 
-  useServerSeoMeta({
+  useSeoMeta({
     description: () => resolved.value.description,
     robots: () => resolved.value.robots ?? "index,follow",
     ogSiteName: siteConfig.name,

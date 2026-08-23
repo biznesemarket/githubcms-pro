@@ -1,19 +1,48 @@
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { slugify, esc } from "./utils.mjs";
 
+// Single source of truth: src/generated/site-config.json (produced by
+// scripts/generate-site-config.mjs).
+let cachedConfig = null;
+function loadConfig() {
+  if (cachedConfig) return cachedConfig;
+  try {
+    const path = join(process.cwd(), "src", "generated", "site-config.json");
+    cachedConfig = JSON.parse(readFileSync(path, "utf8"));
+  } catch {
+    cachedConfig = {
+      siteUrl: (process.env.VITE_SITE_URL || process.env.SITE_URL || "https://example.com").replace(/\/+$/, ""),
+      siteName: "GitHub CMS",
+      org: {},
+    };
+  }
+  return cachedConfig;
+}
+
 export function buildOrgJsonLd(siteUrl) {
+  const cfg = loadConfig();
+  const org = cfg.org || {};
   return {
     "@context": "https://schema.org",
     "@type": "Organization",
-    name: "ООО «ФОНИИ»",
-    legalName: "ООО «ФОНИИ»",
+    name: org.name || cfg.siteName || "GitHub CMS",
+    legalName: org.legalName || org.name || cfg.siteName,
     url: siteUrl,
     logo: siteUrl + "/images/logo-200x40.png",
     foundingDate: "2025",
-    taxID: "7720943604",
-    vatID: "772001001",
-    address: { "@type": "PostalAddress", streetAddress: "111141, г. Москва, пр-кт Зелёный, д 3а, стр. 1", addressCountry: "RU" },
-    contactPoint: { "@type": "ContactPoint", telephone: "+7 (495) 324-30-88", email: "info@fonai.ru", contactType: "Customer Service", areaServed: "Россия, СНГ", availableLanguage: ["ru"] },
-    sameAs: ["https://vk.com/githubcrm", "https://t.me/githubcrm", "https://youtube.com/@githubcrm", "https://github.com/hubcms-dot/githubcms"],
+    taxID: org.inn || undefined,
+    vatID: org.kpp || undefined,
+    address: org.address ? { "@type": "PostalAddress", streetAddress: org.address, addressCountry: "RU" } : undefined,
+    contactPoint: org.email || org.phone ? {
+      "@type": "ContactPoint",
+      telephone: org.phone || undefined,
+      email: org.email || undefined,
+      contactType: "Customer Service",
+      areaServed: org.areaServed || "RU",
+      availableLanguage: ["ru"],
+    } : undefined,
+    sameAs: org.sameAs || [],
   };
 }
 

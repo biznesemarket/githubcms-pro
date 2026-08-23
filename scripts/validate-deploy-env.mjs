@@ -5,6 +5,7 @@ const forbiddenPublicEnv = [
   "VITE_VPS_USER",
   "VITE_VPS_SSH_KEY",
   "VITE_DEPLOY_PATH",
+  "VITE_TINKOFF_TERMINAL_KEY",
 ];
 
 const args = process.argv.slice(2);

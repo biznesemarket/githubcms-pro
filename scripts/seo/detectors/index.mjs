@@ -1,0 +1,16 @@
+export { detectFaqFromHtml } from "./faq.mjs";
+export { detectHowToFromHtml } from "./howto.mjs";
+export { detectItemListFromHtml } from "./itemlist.mjs";
+export { detectQAPageFromHtml } from "./qapage.mjs";
+export { detectReviewFromHtml } from "./review.mjs";
+export { detectDefinedTermFromHtml } from "./definedterm.mjs";
+export { detectImageObjectFromHtml } from "./imageobject.mjs";
+export { detectStatisticalFromHtml } from "./statistical.mjs";
+export { detectPersonFromHtml } from "./person.mjs";
+export { detectCaseStudyFromHtml } from "./casestudy.mjs";
+export { detectTableFromHtml } from "./table.mjs";
+export { detectVideoFromHtml } from "./video.mjs";
+export { detectPlanActionFromHtml } from "./planaction.mjs";
+export { detectWebAppFromHtml } from "./webapp.mjs";
+export { detectCitationFromHtml } from "./citation.mjs";
+export { detectMethodologyFromHtml } from "./methodology.mjs";

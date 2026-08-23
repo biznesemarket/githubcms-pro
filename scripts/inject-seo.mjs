@@ -1,70 +1,109 @@
 import { existsSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join, relative } from "node:path";
+import * as cheerio from "cheerio";
 import { slugify } from "./shared/slugify.mjs";
+import { loadProjectEnv } from "./shared/load-env.mjs";
+import {
+  detectFaqFromHtml,
+  detectHowToFromHtml,
+  detectItemListFromHtml,
+  detectQAPageFromHtml,
+  detectReviewFromHtml,
+  detectDefinedTermFromHtml,
+  detectImageObjectFromHtml,
+  detectStatisticalFromHtml,
+  detectPersonFromHtml,
+  detectCaseStudyFromHtml,
+  detectTableFromHtml,
+  detectVideoFromHtml,
+  detectPlanActionFromHtml,
+  detectWebAppFromHtml,
+  detectCitationFromHtml,
+  detectMethodologyFromHtml,
+} from "./seo/detectors/index.mjs";
 
-function loadEnvFile(envPath) {
-  if (!existsSync(envPath)) return;
-  const content = readFileSync(envPath, "utf8");
-  for (const line of content.split("\n")) {
-    const trimmed = line.trim();
-    if (!trimmed || trimmed.startsWith("#")) continue;
-    const eqIndex = trimmed.indexOf("=");
-    if (eqIndex === -1) continue;
-    const key = trimmed.slice(0, eqIndex).trim();
-    const value = trimmed.slice(eqIndex + 1).trim();
-    if (!process.env[key]) process.env[key] = value;
+loadProjectEnv();
+
+function loadAllPages() {
+  const generatedPath = join(process.cwd(), "src", "generated", "all-pages.json");
+  const source = readFileSync(generatedPath, "utf8");
+  try {
+    return JSON.parse(source);
+  } catch (err) {
+    throw new Error(`Failed to parse all-pages.json: ${err.message}`);
   }
 }
 
-loadEnvFile(join(process.cwd(), ".env"));
+const allPages = loadAllPages();
+const articles = allPages.filter((p) => p.section === "blog");
+const pages = allPages.filter((p) => p.section !== "blog");
 
-function loadArticles() {
-  const generatedPath = join(process.cwd(), "src", "generated", "articles.ts");
-  const source = readFileSync(generatedPath, "utf8");
-  const match = source.match(/export const articles = (\[[\s\S]*\])\s*as const/);
-  if (!match) throw new Error("Could not parse articles.ts");
-  return JSON.parse(match[1]);
+const siteConfig = readSiteConfig();
+
+function readSiteConfig() {
+  const configPath = join(process.cwd(), "src", "generated", "site-config.json");
+  try {
+    return JSON.parse(readFileSync(configPath, "utf8"));
+  } catch {
+    // Fall back to minimal config (build without generate:site-config).
+    const siteUrl = (process.env.VITE_SITE_URL || process.env.SITE_URL || "https://example.com").replace(/\/+$/, "");
+    return {
+      siteUrl,
+      siteName: "GitHub CMS",
+      siteDescription: "GitHub CMS static site",
+      defaultImage: "",
+      locale: process.env.VITE_LOCALE || "ru",
+      isRu: (process.env.VITE_LOCALE || "ru") === "ru",
+      ruDomain: siteUrl,
+      enDomain: siteUrl,
+      alternateUrl: siteUrl,
+      org: {
+        name: "Your Company",
+        legalName: "Your Company LLC",
+        inn: "",
+        kpp: "",
+        address: "",
+        phone: "",
+        email: "",
+        areaServed: "Russia",
+        sameAs: [],
+      },
+    };
+  }
 }
 
-function loadPages() {
-  const generatedPath = join(process.cwd(), "src", "generated", "pages.ts");
-  if (!existsSync(generatedPath)) return [];
-  const source = readFileSync(generatedPath, "utf8");
-  const match = source.match(/export const pages = (\[[\s\S]*\])\s*as const/);
-  if (!match) return [];
-  return JSON.parse(match[1]);
-}
-
-const articles = loadArticles();
-const sitePages = loadPages();
-const pages = loadPages();
-
-const locale = process.env.VITE_LOCALE || "ru";
-const isRu = locale === "ru";
-const siteUrl = (process.env.VITE_SITE_URL || process.env.SITE_URL || "https://githubcms.com").replace(/\/+$/, "");
-const alternateUrl = siteUrl.includes("githubcms.ru") ? siteUrl.replace("githubcms.ru", "githubcms.com") : siteUrl.replace("githubcms.com", "githubcms.ru");
-const siteName = "GitHub CMS";
-const siteDescription = isRu
-  ? "Статический сайт с AI-видимостью из коробки. Markdown → JSON-LD → деплой за 2 минуты."
-  : "Static site with AI visibility out of the box. Markdown → JSON-LD → deploy in 2 minutes.";
-const defaultImage = `https://pixinlink.ru/api/v1/1200x630/github-cms`;
+const locale = siteConfig.locale || process.env.VITE_LOCALE || "ru";
+const isRu = siteConfig.isRu ?? locale === "ru";
+const siteUrl = siteConfig.siteUrl;
+const alternateUrl = siteConfig.alternateUrl || siteUrl;
+const siteName = siteConfig.siteName;
+const siteDescription = siteConfig.siteDescription;
+const defaultImage = siteConfig.defaultImage;
 const bcHome = isRu ? "Главная" : "Home";
 const bcBlog = isRu ? "Блог" : "Blog";
 
 function buildOrgJsonLd() {
+  const org = siteConfig.org || {};
   return {
     "@context": "https://schema.org",
     "@type": "Organization",
-    name: "ООО «ФОНИИ»",
-    legalName: "ООО «ФОНИИ»",
+    name: org.name || siteName,
+    legalName: org.legalName || org.name || siteName,
     url: siteUrl,
     logo: siteUrl + "/images/logo-200x40.png",
     foundingDate: "2025",
-    taxID: "7720943604",
-    vatID: "772001001",
-    address: { "@type": "PostalAddress", streetAddress: "111141, г. Москва, пр-кт Зелёный, д 3а, стр. 1", addressCountry: "RU" },
-    contactPoint: { "@type": "ContactPoint", telephone: "+7 (495) 324-30-88", email: "info@fonai.ru", contactType: "Customer Service", areaServed: "Россия, СНГ", availableLanguage: ["ru"] },
-    sameAs: ["https://vk.com/githubcrm", "https://t.me/githubcrm", "https://youtube.com/@githubcrm", "https://github.com/hubcms-dot/githubcms"],
+    taxID: org.inn || undefined,
+    vatID: org.kpp || undefined,
+    address: org.address ? { "@type": "PostalAddress", streetAddress: org.address, addressCountry: "RU" } : undefined,
+    contactPoint: org.email || org.phone ? {
+      "@type": "ContactPoint",
+      telephone: org.phone || undefined,
+      email: org.email || undefined,
+      contactType: "Customer Service",
+      areaServed: org.areaServed || "RU",
+      availableLanguage: ["ru"],
+    } : undefined,
+    sameAs: org.sameAs || [],
   };
 }
 
@@ -106,278 +145,87 @@ function buildBreadcrumbList(article) {
   return items;
 }
 
-function detectFaqFromHtml(html) {
-  const items = [];
-  // Pattern 1: Bootstrap accordion FAQ
-  const accordionRegex = /<button[^>]*data-bs-[^>]*>[^<]*([\s\S]*?)<\/button>[\s\S]*?<div[^>]*>[\s\S]*?<p[^>]*>([\s\S]*?)<\/p>/gi;
-  let m;
-  while ((m = accordionRegex.exec(html)) !== null) {
-    const q = m[1].replace(/<[^>]+>/g, "").trim();
-    const a = m[2].replace(/<[^>]+>/g, "").trim();
-    if (q && a && q.length > 5 && a.length > 10) items.push({ question: q, answer: a });
-  }
-  // Pattern 2: Markdown **Q:** / **A:**
-  const mdFaqRegex = /\*\*Q:\s*(.+?)\*\*\s*([\s\S]*?)(?=\*\*Q:\s*|<\/)/gi;
-  while ((m = mdFaqRegex.exec(html)) !== null) {
-    const q = m[1].trim();
-    const a = m[2].replace(/^\s*\*\*A:\s*\*\*?\s*/i, "").replace(/<[^>]+>/g, "").trim();
-    if (q && a && q.length > 5 && a.length > 15) items.push({ question: q, answer: a });
-  }
-  // Pattern 3: Section-based FAQ with strong/em + paragraph pairs
-  if (items.length < 3) {
-    const faqSectionRegex = /<(?:section|div)[^>]*id="faq"[^>]*>([\s\S]*?)<\/(?:section|div)>/i;
-    const faqSection = html.match(faqSectionRegex)?.[1];
-    if (faqSection) {
-      const qaRegex = /<(?:strong|h[34])[^>]*>([^<]+)<\/(?:strong|h[34])>\s*<p[^>]*>([\s\S]*?)<\/p>/gi;
-      let m;
-      while ((m = qaRegex.exec(faqSection)) !== null) {
-        const q = m[1].replace(/<[^>]+>/g, "").trim();
-        const a = m[2].replace(/<[^>]+>/g, "").trim();
-        if (q && a && q.length > 5 && a.length > 15 && !items.some(i => i.question === q)) {
-          items.push({ question: q, answer: a });
-        }
-      }
-    }
-  }
-  // Pattern 4: Raw HTML Q:/A: pattern (section article raw HTML)
-  if (items.length < 3) {
-    const rawFaqRegex = /<(?:strong|b)[^>]*>Q:\s*<\/\1>\s*<(?:p|div)[^>]*>([\s\S]*?)<\/(?:p|div)>\s*<(?:strong|b)[^>]*>A:\s*<\/\1>\s*<(?:p|div)[^>]*>([\s\S]*?)<\/(?:p|div)>/gi;
-    let m;
-    while ((m = rawFaqRegex.exec(html)) !== null) {
-      const q = m[1].replace(/<[^>]+>/g, "").trim();
-      const a = m[2].replace(/<[^>]+>/g, "").trim();
-      if (q && a && q.length > 5 && a.length > 15 && !items.some(i => i.question === q)) {
-        items.push({ question: q, answer: a });
-      }
-    }
-  }
-  return items.length >= 3 ? { "@context": "https://schema.org", "@type": "FAQPage", mainEntity: items.map(item => ({ "@type": "Question", name: item.question, acceptedAnswer: { "@type": "Answer", text: item.answer } })) } : null;
-}
-
-// ── Content detectors for inject-seo ──
-
-function detectHowToFromHtml(html) {
-  const steps = [];
-  const stepCardRegex = /<div[^>]*class="[^"]*step-number[^"]*"[^>]*>([^<]+)<\/div>\s*(?:<h[34][^>]*>([^<]+)<\/h[34]>\s*)?<p[^>]*>([^<]+)<\/p>/gi;
-  let m;
-  while ((m = stepCardRegex.exec(html)) !== null) {
-    const name = m[2]?.trim() || `Шаг ${m[1].trim()}`;
-    steps.push({ name, text: m[3].trim() });
-  }
-  if (steps.length >= 3) {
-    const titleMatch = html.match(/<h[12][^>]*>([^<]*)<\/h[12]>/i);
-    return { "@context": "https://schema.org", "@type": "HowTo", name: titleMatch?.[1]?.trim() || "Инструкция", step: steps.map((s, i) => ({ "@type": "HowToStep", position: String(i + 1), name: s.name, text: s.text })) };
-  }
-  return null;
-}
-
-function detectItemListFromHtml(html) {
-  const items = [];
-  const factRegex = /<div[^>]*class="[^"]*fact-number[^"]*"[^>]*>([^<]+)<\/div>\s*<div[^>]*class="[^"]*fact-text[^"]*"[^>]*>([^<]+)<\/div>/gi;
-  let m;
-  while ((m = factRegex.exec(html)) !== null) {
-    items.push({ name: `${m[1].trim()} — ${m[2].trim()}` });
-  }
-  if (items.length >= 3) {
-    return { "@context": "https://schema.org", "@type": "ItemList", itemListElement: items.map((item, i) => ({ "@type": "ListItem", position: i + 1, name: item.name })) };
-  }
-  return null;
-}
-
-function detectQAPageFromHtml(html) {
-  const featuredRegex = /<div[^>]*class="[^"]*(featured-snippet|block-answer)[^"]*"[^>]*>([\s\S]*?)<\/div>/gi;
-  let m;
-  while ((m = featuredRegex.exec(html)) !== null) {
-    const text = m[2].replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
-    if (text.length > 80) {
-      const before = html.substring(0, m.index);
-      const qMatch = before.match(/<h[234][^>]*>([^<]+\?[^<]*)<\/h[234]>/i);
-      return { "@context": "https://schema.org", "@type": "QAPage", mainEntity: { "@type": "Question", name: qMatch?.[1]?.trim() || "Что это?", acceptedAnswer: { "@type": "Answer", text: text.slice(0, 500) } } };
-    }
-  }
-  return null;
-}
-
-function detectAllSchemasFromHtml(html) {
+function detectAllSchemasFromHtml(html, pageLd = []) {
+  const $ = cheerio.load(html);
+  const text = $("body").text().replace(/\s+/g, " ").trim();
   const schemas = [];
-  const faq = detectFaqFromHtml(html); if (faq) schemas.push(faq);
-  const howto = detectHowToFromHtml(html); if (howto) schemas.push(howto);
-  const itemlist = detectItemListFromHtml(html); if (itemlist) schemas.push(itemlist);
-  const qapage = detectQAPageFromHtml(html); if (qapage) schemas.push(qapage);
-  const review = detectReviewFromHtml(html); if (review) schemas.push(review);
-  const definedterm = detectDefinedTermFromHtml(html); if (definedterm.length) schemas.push(...definedterm);
-  const imageobject = detectImageObjectFromHtml(html); if (imageobject.length) schemas.push(...imageobject);
-  const statistical = detectStatisticalFromHtml(html); if (statistical.length) schemas.push(...statistical);
-  const person = detectPersonFromHtml(html); if (person) schemas.push(person);
-  const casestudy = detectCaseStudyFromHtml(html); if (casestudy) schemas.push(casestudy);
-  const table = detectTableFromHtml(html); if (table.length) schemas.push(...table);
-  const video = detectVideoFromHtml(html); if (video.length) schemas.push(...video);
-  const planaction = detectPlanActionFromHtml(html); if (planaction) schemas.push(planaction);
-  const webapp = detectWebAppFromHtml(html); if (webapp) schemas.push(webapp);
-  const citation = detectCitationFromHtml(html); if (citation) schemas.push(citation);
-  const methodology = detectMethodologyFromHtml(html); if (methodology) schemas.push(methodology);
+  const faq = detectFaqFromHtml($); if (faq) schemas.push(faq);
+  const howto = detectHowToFromHtml($); if (howto) schemas.push(howto);
+  const itemlist = detectItemListFromHtml($); if (itemlist) schemas.push(itemlist);
+  const qapage = detectQAPageFromHtml($); if (qapage) schemas.push(qapage);
+  // The review detector emits a generic "Reviewed item" Product wrapper. On
+  // pages that already carry a real Product schema (shop product pages), skip
+  // it to avoid duplicate @type entries.
+  const pageLdTypes = pageLd.map((s) => s["@type"]).filter(Boolean);
+  const alreadyHasProduct =
+    pageLdTypes.includes("Product") ||
+    schemas.some((s) => s["@type"] === "Product") ||
+    html.includes('"@type":"Product"');
+  const review = detectReviewFromHtml(text); if (review && !alreadyHasProduct) schemas.push(review);
+  const definedterm = detectDefinedTermFromHtml($); if (definedterm.length) schemas.push(...definedterm);
+  const imageobject = detectImageObjectFromHtml($); if (imageobject.length) schemas.push(...imageobject);
+  const statistical = detectStatisticalFromHtml(text); if (statistical.length) schemas.push(...statistical);
+  const person = detectPersonFromHtml(text, siteName); if (person) schemas.push(person);
+  const casestudy = detectCaseStudyFromHtml(text); if (casestudy) schemas.push(casestudy);
+  const table = detectTableFromHtml($); if (table.length) schemas.push(...table);
+  const video = detectVideoFromHtml($); if (video.length) schemas.push(...video);
+  const planaction = detectPlanActionFromHtml(text); if (planaction) schemas.push(planaction);
+  const webapp = detectWebAppFromHtml($); if (webapp) schemas.push(webapp);
+  const citation = detectCitationFromHtml(text); if (citation) schemas.push(citation);
+  const methodology = detectMethodologyFromHtml(text, siteName); if (methodology) schemas.push(methodology);
   return schemas;
 }
 
-// ── REVIEW detector ──
-function detectReviewFromHtml(html) {
-  const reviews = [];
-  const starRegex = /(★{1,5})/g; let m;
-  while ((m = starRegex.exec(html)) !== null) {
-    const rating = m[1].length;
-    const after = html.substring(m.index + m[0].length, m.index + m[0].length + 400);
-    const nm = after.match(/([А-ЯA-Z][а-яa-z]+\s+[А-ЯA-Z][а-яa-z]+)/);
-    const tm = after.match(/[^.!?]{20,150}[.!?]/);
-    if (nm && tm) reviews.push({ a: nm[1], r: rating, t: tm[0].trim(), d: new Date().toISOString().slice(0,10) });
-  }
-  if (reviews.length >= 1) {
-    const avg = (reviews.reduce((s,r)=>s+r.r,0)/reviews.length).toFixed(1);
-    return { "@context":"https://schema.org","@type":"AggregateRating", ratingValue: avg, bestRating:"5", worstRating:"1", ratingCount: String(reviews.length), reviewCount: String(reviews.length), review: reviews.map(r=>({ "@type":"Review", author:{ "@type":"Person", name: r.a }, reviewRating:{ "@type":"Rating", ratingValue: String(r.r) }, reviewBody: r.t, datePublished: r.d })) };
-  }
-  return null;
-}
-
-// ── DEFINEDTERM detector ──
-function detectDefinedTermFromHtml(html) {
-  const results = []; const re = /<h3[^>]*>([^<]{5,60})<\/h3>\s*<p[^>]*>([^<]{30,300})<\/p>/gi; let m, c=0;
-  while ((m=re.exec(html))!==null&&c<5) {
-    const t=m[1].trim(), d=m[2].replace(/<[^>]+>/g,"").trim();
-    if (t&&d&&!/^[0-9.\s]+$/.test(t)){ results.push({"@context":"https://schema.org","@type":"DefinedTerm",name:t,description:d}); c++; }
-  }
-  return results;
-}
-
-// ── IMAGEOBJECT detector ──
-function detectImageObjectFromHtml(html) {
-  const results = []; const re = /<img[^>]+src="([^"]+)"[^>]+alt="([^"]*)"[^>]*>/gi; let m, c=0;
-  while ((m=re.exec(html))!==null&&c<3) {
-    const s=m[1], a=m[2]||"Изображение";
-    if (s&&a.length>5&&s.startsWith("http")) { results.push({"@context":"https://schema.org","@type":"ImageObject",name:a.slice(0,80),url:s,description:a.slice(0,120),contentUrl:s,encodingFormat:"image/png"}); c++; }
-  }
-  return results;
-}
-
-// ── STATISTICAL detector ──
-function detectStatisticalFromHtml(html) {
-  const clean = html.replace(/<[^>]+>/g," ").replace(/\s+/g," ").trim(); const results = [];
-  const re = /(\d+(?:[.,]\d+)?)\s*%(?:\s+([^.]{10,150}?(?:\([^)]*\d{4}[^)]*\)|по данным\s+[^.]+)))/gi; let m, c=0;
-  while ((m=re.exec(clean))!==null&&c<3) {
-    const v=Number.parseFloat(m[1].replace(",",".")), t=m[2].trim().replace(/\s+/g," ");
-    if (v>0&&v<=100&&t.length>10&&t.length<200) { results.push({"@context":"https://schema.org","@type":"StatisticalVariable",name:t.slice(0,80),value:{"@type":"QuantitativeValue",value:v,unitText:"percent"},citation:{"@type":"Citation",text:t.slice(0,120)}}); c++; }
-  }
-  return results;
-}
-
-// ── PERSON detector ──
-function detectPersonFromHtml(html) {
-  const m = html.match(/(?:Автор|author)[:\s]*<[^>]*>([^<]+)<\/[^>]*>/i) || html.match(/(?:Автор|author)[:\s]*([А-ЯA-Z][а-яa-z]+\s+[А-ЯA-Z][а-яa-z]+)/);
-  if (!m) return null;
-  return {"@context":"https://schema.org","@type":"Person",name:m[1].trim(),affiliation:{"@type":"Organization",name:siteName}};
-}
-
-// ── CASESTUDY detector ──
-function detectCaseStudyFromHtml(html) {
-  if (!/(кейс|case\s*study|внедрен|миграц)/i.test(html)) return null;
-  const cm = html.match(/(?:клиент|заказчик|компани[яи]|customer|client)[:\s]*"?([А-ЯA-Z][^"<,\n]{3,50})/i);
-  if (!cm) return null;
-  const pm = html.match(/(?:проблем[аы]|problem)[:\s]([^.<\n]{15,150})/i);
-  const rm = html.match(/(?:результат|result|итог|экономия|сократили|увеличили)[:\s]*([^.<\n]{10,150})/i);
-  return {"@context":"https://schema.org","@type":"CaseStudy",headline:"Кейс внедрения",about:{"@type":"Organization",name:cm[1].trim()},problem:pm?.[1]?.trim()||"Оптимизация",solution:"Решение внедрено",result:rm?.[1]?.trim()||"Положительный результат"};
-}
-
-// ── TABLE detector ──
-function detectTableFromHtml(html) {
-  const tables = html.match(/<table[^>]*>[\s\S]*?<\/table>/gi); if (!tables?.length) return [];
-  return tables.map(t => { const h=[]; const hr=/<th[^>]*>([^<]+)<\/th>/gi; let m; while ((m=hr.exec(t))!==null) h.push(m[1].trim());
-    return h.length>=2 ? {"@context":"https://schema.org","@type":"Table",name:"Сравнение: "+h.slice(1,4).join(" vs ")} : null; }).filter(Boolean);
-}
-
-// ── VIDEO detector ──
-function detectVideoFromHtml(html) {
-  const results = []; const re = /<(?:iframe[^>]+src="(https?:\/\/(?:www\.)?(?:youtube\.com|youtu\.be|vimeo\.com)[^"]*)"|<video[^>]*src="([^"]*)")[^>]*>/gi; let m;
-  while ((m=re.exec(html))!==null) { const u=m[1]||m[2]; if (u) results.push({"@context":"https://schema.org","@type":"VideoObject",name:"Видео",description:"Видео на странице",contentUrl:u,uploadDate:new Date().toISOString().slice(0,10)}); }
-  return results;
-}
-
-// ── PLANACTION detector ──
-function detectPlanActionFromHtml(html) {
-  const phases = []; const re = /(?:Phase\s+|Этап\s+|Q[1-4]\s*[-–]\s*Q[1-4]\s*)(\d{4})?[:\s]*([^<]{10,80})/gi; let m;
-  while ((m=re.exec(html))!==null) { if (m[2]?.trim().length>5) phases.push({phase:m[2].trim(),period:m[1]||"2025-2026",actions:m[2].trim(),results:"Результат запланирован"}); }
-  if (phases.length>=2) return {"@context":"https://schema.org","@type":"PlanAction",name:"Roadmap",step:phases.map((p,i)=>({"@type":"OrganizeAction",position:i+1,name:p.phase,startTime:p.period,description:p.actions,result:p.results}))};
-  return null;
-}
-
-// ── WEBAPP detector ──
-function detectWebAppFromHtml(html) {
-  if (!/(калькулятор|calculator|вычислит|расчёт|конфигуратор)/i.test(html)) return null;
-  const nm = html.match(/<h[12][^>]*>([^<]*(?:калькулятор|calculator)[^<]*)<\/h[12]>/i);
-  return {"@context":"https://schema.org","@type":"WebApplication",name:nm?.[1]?.trim()||"Калькулятор",applicationCategory:"UtilityApplication",offers:{"@type":"Offer",price:"0",priceCurrency:"RUB"},operatingSystem:"Web"};
-}
-
-// ── CITATION detector ──
-function detectCitationFromHtml(html) {
-  const sources = []; const re = /\[([^\]]{5,80})\]/g; let m, c=0;
-  while ((m=re.exec(html))!==null&&c<5) { const t=m[1].replace(/<[^>]+>/g,"").trim(); if (/\d{4}/.test(t)&&t.length>10) { sources.push({text:t}); c++; } }
-  if (sources.length<2) { const dr=/(?:согласно|по данным|according to|based on)\s+([^.<]{10,80})/gi; while ((m=dr.exec(html))!==null) sources.push({text:m[1].trim()}); }
-  if (sources.length>=2) return {"@context":"https://schema.org","@type":"ScholarlyArticle",citation:sources.map(s=>({"@type":"Citation",text:s.text}))};
-  return null;
-}
-
-// ── METHODOLOGY detector ──
-function detectMethodologyFromHtml(html) {
-  if (!/(методолог|methodology|как мы |how we |источник|первичный опыт)/i.test(html)) return null;
-  const mm = html.match(/(?:методология|methodology|как мы (?:это |проверя|созда|исследу))[:\s]+([^.<]{30,300})/i);
-  if (!mm) return null;
-  return {"@context":"https://schema.org","@type":"ScholarlyArticle",name:siteName,methodology:mm[1].replace(/<[^>]+>/g,"").trim(),inLanguage:"ru"};
-}
-
+// renderMetaTags — returns { titleTag, headTags } for robust injection
 function renderMetaTags(page) {
-  const tags = [];
-  const title = page.title === siteName ? siteName : `${page.title} | ${siteName}`;
+  const titleTag = `<title>${esc(page.title === siteName ? siteName : `${page.title} | ${siteName}`)}</title>`;
+  const headTags = [];
 
-  tags.push(`<title>${esc(title)}</title>`);
-  tags.push(`<meta name="description" content="${esc(page.description)}">`);
-  tags.push(`<meta name="robots" content="index,follow">`);
-  tags.push(`<meta property="og:site_name" content="${esc(siteName)}">`);
-  tags.push(`<meta property="og:locale" content="${isRu ? "ru_RU" : "en_US"}">`);
+  headTags.push(`<meta name="description" content="${esc(page.description)}">`);
+  headTags.push(`<meta name="robots" content="index,follow">`);
+  headTags.push(`<meta property="og:site_name" content="${esc(siteName)}">`);
+  headTags.push(`<meta property="og:locale" content="${isRu ? "ru_RU" : "en_US"}">`);
   if (alternateUrl) {
-    tags.push(`<meta property="og:locale:alternate" content="${isRu ? "en_US" : "ru_RU"}">`);
+    headTags.push(`<meta property="og:locale:alternate" content="${isRu ? "en_US" : "ru_RU"}">`);
   }
   // hreflang tags for bilingual sites
   if (page.canonical) {
     const otherLocale = isRu ? "en" : "ru";
     const otherUrl = page.canonical.replace(siteUrl, alternateUrl);
-    tags.push(`<link rel="alternate" hreflang="${otherLocale}" href="${otherUrl}">`);
-    tags.push(`<link rel="alternate" hreflang="${isRu ? "ru" : "en"}" href="${page.canonical}">`);
-    tags.push(`<link rel="alternate" hreflang="x-default" href="${page.canonical}">`);
+    headTags.push(`<link rel="alternate" hreflang="${otherLocale}" href="${otherUrl}">`);
+    headTags.push(`<link rel="alternate" hreflang="${isRu ? "ru" : "en"}" href="${page.canonical}">`);
+    headTags.push(`<link rel="alternate" hreflang="x-default" href="${page.canonical}">`);
   }
-  tags.push(`<meta property="og:type" content="${esc(page.type)}">`);
-  tags.push(`<meta property="og:title" content="${esc(page.title)}">`);
-  tags.push(`<meta property="og:description" content="${esc(page.description)}">`);
-  tags.push(`<meta property="og:url" content="${esc(page.canonical)}">`);
-  tags.push(`<meta property="og:image" content="${esc(page.image)}">`);
-  tags.push(`<meta name="twitter:card" content="summary_large_image">`);
-  tags.push(`<meta name="twitter:title" content="${esc(page.title)}">`);
-  tags.push(`<meta name="twitter:description" content="${esc(page.description)}">`);
-  tags.push(`<meta name="twitter:image" content="${esc(page.image)}">`);
+  headTags.push(`<meta property="og:type" content="${esc(page.type)}">`);
+  headTags.push(`<meta property="og:title" content="${esc(page.title)}">`);
+  headTags.push(`<meta property="og:description" content="${esc(page.description)}">`);
+  headTags.push(`<meta property="og:url" content="${esc(page.canonical)}">`);
+  headTags.push(`<meta property="og:image" content="${esc(page.image)}">`);
+  headTags.push(`<meta name="twitter:card" content="summary_large_image">`);
+  headTags.push(`<meta name="twitter:title" content="${esc(page.title)}">`);
+  headTags.push(`<meta name="twitter:description" content="${esc(page.description)}">`);
+  headTags.push(`<meta name="twitter:image" content="${esc(page.image)}">`);
 
-  if (page.publishedTime) tags.push(`<meta property="article:published_time" content="${esc(page.publishedTime)}">`);
-  if (page.modifiedTime) tags.push(`<meta property="article:modified_time" content="${esc(page.modifiedTime)}">`);
-  if (page.tags?.length) tags.push(`<meta name="keywords" content="${esc(page.tags.join(", "))}">`);
+  if (page.publishedTime) headTags.push(`<meta property="article:published_time" content="${esc(page.publishedTime)}">`);
+  if (page.modifiedTime) headTags.push(`<meta property="article:modified_time" content="${esc(page.modifiedTime)}">`);
+  if (page.tags?.length) headTags.push(`<meta name="keywords" content="${esc(page.tags.join(", "))}">`);
 
-  tags.push(`<link rel="canonical" href="${esc(page.canonical)}">`);
-  tags.push(`<link rel="alternate" type="application/rss+xml" title="${esc(siteName)} RSS Feed" href="${esc(siteUrl)}/rss.xml">`);
+  headTags.push(`<link rel="canonical" href="${esc(page.canonical)}">`);
+  headTags.push(`<link rel="alternate" type="application/rss+xml" title="${esc(siteName)} RSS Feed" href="${esc(siteUrl)}/rss.xml">`);
 
   if (page.jsonLd) {
     const items = Array.isArray(page.jsonLd) ? page.jsonLd : [page.jsonLd];
     for (const item of items) {
       const ld = JSON.stringify(item).replace(/</g, "\\u003C").replace(/>/g, "\\u003E").replace(/&/g, "\\u0026");
-      tags.push(`<script type="application/ld+json">${ld}</script>`);
+      headTags.push(`<script type="application/ld+json">${ld}</script>`);
     }
   }
 
-  return tags.join("\n    ");
+  return { titleTag, headTags: headTags.join("\n    ") };
 }
+
+// DELETE old renderMetaTags (kept for reference — now above returns {titleTag, headTags})
+// Line 379 was: return tags.join("\n    ");
 
 function collectPageHtmlFiles(dir) {
   const results = [];
@@ -503,7 +351,7 @@ for (const article of articles) {
 }
 
 // Site pages (about, contact, etc.)
-for (const p of sitePages) {
+for (const p of pages) {
   const slug = p.frontmatter.slug;
   const canonical = `${siteUrl}/${slug}/`;
 
@@ -828,23 +676,25 @@ for (const { file, route } of htmlFiles) {
 
   // Build final JSON-LD: Organization + Breadcrumb + detected content schemas
   // SSR provides content schemas (Article, Product, FAQ, etc.) — we add site-wide ones
-  const detectedSchemas = detectAllSchemasFromHtml(html);
-
   const pageLd = [];
   pageLd.push(orgBlock());
   if (page.jsonLd) {
     if (Array.isArray(page.jsonLd)) pageLd.push(...page.jsonLd);
     else pageLd.push(page.jsonLd);
   }
+  const detectedSchemas = detectAllSchemasFromHtml(html, pageLd);
   if (detectedSchemas.length > 0) pageLd.push(...detectedSchemas);
 
   // Update page data so renderMetaTags generates complete JSON-LD
   page.jsonLd = pageLd;
 
-  const tags = renderMetaTags(page);
+  const { titleTag, headTags } = renderMetaTags(page);
 
   html = html.replace(/<html lang="\w+"/, `<html lang="${isRu ? "ru" : "en"}"`);
-  html = html.replace(/<title>[^<]*<\/title>/, tags);
+  // Robust regex: matches <title> with or without attributes, self-closing or not
+  html = html.replace(/<title\b[^>]*>[^<]*<\/title>/, titleTag);
+  // Insert meta/link/script tags immediately after the <title> element
+  html = html.replace(titleTag, `${titleTag}\n    ${headTags}`);
 
   writeFileSync(file, html, "utf8");
   injected++;

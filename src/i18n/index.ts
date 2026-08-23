@@ -1,5 +1,5 @@
-import { ru } from "./ru";
-import { en } from "./en";
+import { ru } from "./ru.ts";
+import { en } from "./en.ts";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const viteEnv = (typeof import.meta !== "undefined" ? (import.meta as any).env : undefined) as Record<string, string> | undefined;

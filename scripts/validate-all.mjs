@@ -1,6 +1,8 @@
 import { spawnSync } from "node:child_process";
 
 const siteUrl = process.env.VITE_SITE_URL || "https://preflight.githubcms.example";
+const edition = process.env.VITE_EDITION || "pro";
+const sharedEnv = { VITE_SITE_URL: siteUrl, VITE_EDITION: edition };
 
 const steps = [
   {
@@ -30,17 +32,21 @@ const steps = [
   {
     name: "Validate build environment",
     args: ["run", "validate:deploy-env", "--", "--mode", "build"],
-    env: { VITE_SITE_URL: siteUrl },
+    env: sharedEnv,
   },
   {
     name: "Build static site",
     args: ["run", "build"],
-    env: { VITE_SITE_URL: siteUrl },
+    env: sharedEnv,
   },
   {
     name: "Validate SEO files",
     args: ["run", "validate:seo-files", "--", "--dir", "dist"],
-    env: { VITE_SITE_URL: siteUrl },
+    env: sharedEnv,
+  },
+  {
+    name: "Validate JSON-LD (no duplicate standalone blocks)",
+    args: ["run", "validate:dist-jsonld"],
   },
   {
     name: "Scan dist for secret markers",
@@ -48,7 +54,7 @@ const steps = [
   },
 ];
 
-console.log(`Preflight VITE_SITE_URL: ${siteUrl}`);
+console.log(`Preflight VITE_SITE_URL: ${siteUrl} (edition: ${edition})`);
 
 for (const step of steps) {
   console.log(`\n==> ${step.name}`);

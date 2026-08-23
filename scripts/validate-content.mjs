@@ -1,6 +1,7 @@
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { extname, join, relative } from "node:path";
 import matter from "gray-matter";
+import { parseBlocks, validateBlocks as validateBlocksShared } from "../src/markdown/blocks.mjs";
 
 const commonFields = [
   "title",
@@ -124,18 +125,86 @@ function validateBlocks(filepath, body) {
   const failures = [];
   const relPath = relative(process.cwd(), filepath).replace(/\\/g, "/");
 
-  const markers = body.match(/<!--\s*@block:\s*(\S+)\s*-->/g) || [];
-  const seen = new Set();
-
-  for (const marker of markers) {
-    const name = marker.match(/@block:\s*(\S+)/)[1];
-    if (seen.has(name)) {
-      failures.push(`${relPath}: duplicate block marker '${name}'`);
-    }
-    seen.add(name);
+  const errors = validateBlocksShared(body);
+  for (const err of errors) {
+    failures.push(`${relPath}: ${err}`);
   }
 
   return failures;
+}
+
+// Articles must not start their body with an H1 — the H1 comes from the
+// PageBanner/title. Checks the rendered body (outside block pairs).
+function validateBodyHeadings(filepath, body) {
+  const failures = [];
+  const relPath = relative(process.cwd(), filepath).replace(/\\/g, "/");
+  const { body: bodyText } = parseBlocks(body);
+
+  const firstHeading = bodyText.match(/^\s*(#{1,6})\s+/m);
+  if (firstHeading && firstHeading[1].length === 1) {
+    failures.push(`${relPath}: article body must not start with an H1 heading (H1 comes from title/PageBanner)`);
+  }
+  return failures;
+}
+
+// Collect the set of known internal routes from all content slugs.
+function buildKnownRoutes(entries) {
+  const routes = new Set(["/", "/blog/", "/templates/", "/shop/"]);
+  for (const entry of entries) {
+    if (!entry.slug) continue;
+    if (entry.section === "blog") {
+      routes.add(`/blog/${entry.slug}/`);
+      routes.add(`/blog/${entry.slug}`);
+    } else if (entry.section === "shop") {
+      routes.add(`/shop/${entry.slug}/`);
+      routes.add(`/shop/${entry.slug}`);
+    } else if (entry.section) {
+      routes.add(`/${entry.section}/${entry.slug}/`);
+      routes.add(`/${entry.section}/${entry.slug}`);
+      routes.add(`/${entry.slug}/`);
+      routes.add(`/${entry.slug}`);
+    } else {
+      routes.add(`/${entry.slug}/`);
+      routes.add(`/${entry.slug}`);
+    }
+  }
+  return routes;
+}
+
+// Validate internal links against known routes. Matches only real link
+// contexts: HTML `href="..."` and Markdown `[text](/path)`.
+function validateInternalLinks(filepath, body, knownRoutes) {
+  const failures = [];
+  const relPath = relative(process.cwd(), filepath).replace(/\\/g, "/");
+  const hrefRe = /href\s*=\s*["']([^"']+)["']/gi;
+  const mdLinkRe = /\]\(\s*([^)\s]+)\s*\)/g;
+  const links = [];
+
+  let m;
+  hrefRe.lastIndex = 0;
+  while ((m = hrefRe.exec(body)) !== null) links.push(m[1]);
+  mdLinkRe.lastIndex = 0;
+  while ((m = mdLinkRe.exec(body)) !== null) links.push(m[1]);
+
+  const seen = new Set();
+  for (const raw of links) {
+    if (seen.has(raw)) continue;
+    seen.add(raw);
+    const href = raw.split(/[?#]/)[0];
+    if (!href.startsWith("/") || href.startsWith("//")) continue;
+    const path = href.replace(/\/+$/, "") || "/";
+    const candidates = [path, `${path}/`];
+    if (!candidates.some((c) => knownRoutes.has(c))) {
+      failures.push(`${relPath}: broken internal link "${raw}" (no matching route)`);
+    }
+  }
+  return failures;
+}
+
+function collectLegacyWarnings(filepath, body) {
+  const relPath = relative(process.cwd(), filepath).replace(/\\/g, "/");
+  const { legacyWarnings } = parseBlocks(body);
+  return legacyWarnings.map((w) => `${relPath}: ${w}`);
 }
 
 function validateSecrets(filepath, content) {
@@ -151,12 +220,34 @@ function validateSecrets(filepath, content) {
   return failures;
 }
 
+function validateRawHtml(filepath, frontmatter, content) {
+  const failures = [];
+  const relPath = relative(process.cwd(), filepath).replace(/\\/g, "/");
+
+  if (frontmatter.raw_html !== true) return failures;
+
+  if (/<script[\s>]/i.test(content)) {
+    failures.push(`${relPath}: raw_html pages must not contain <script> tags`);
+  }
+  if (/\son(?:click|load|error|mouseover|mouseout|mouseenter|mouseleave|mousedown|mouseup|keydown|keyup|keypress|change|submit|input|focus|blur|scroll|resize|dblclick|contextmenu|touchstart|touchend|pointerdown|pointerup|animationstart|transitionend|wheel)\w*\s*=/i.test(content)) {
+    failures.push(`${relPath}: raw_html pages must not contain inline event handlers (on*)`);
+  }
+  if (/<main[\s>]/i.test(content)) {
+    failures.push(`${relPath}: raw_html pages must not contain a nested <main> element (PageView wraps content in <main>)`);
+  }
+  return failures;
+}
+
 const contentDir = join(process.cwd(), "content");
-const templatesDir = join(contentDir, "templates");
+const promptTemplatesDir = join(contentDir, "prompt-templates");
 const files = collectFiles(contentDir).filter(
-  (f) => !f.startsWith(templatesDir),
+  (f) => !f.startsWith(promptTemplatesDir),
 );
 const failures = [];
+const warnings = [];
+
+// Per-file metadata collected for cross-file checks.
+const allEntries = [];
 
 for (const file of files) {
   const source = readFileSync(file, "utf8");
@@ -166,6 +257,66 @@ for (const file of files) {
   failures.push(...validateFrontmatter(file, frontmatter));
   failures.push(...validateBlocks(file, parsed.content));
   failures.push(...validateSecrets(file, source));
+  failures.push(...validateRawHtml(file, frontmatter, parsed.content));
+  failures.push(...validateBodyHeadings(file, parsed.content));
+  warnings.push(...collectLegacyWarnings(file, parsed.content));
+
+  const relPath = relative(process.cwd(), file).replace(/\\/g, "/");
+  const localeMatch = relPath.match(/^content\/([a-z]{2})\//);
+  const sectionMatch = relPath.match(/^content\/[a-z]{2}\/([^/]+)\//);
+  allEntries.push({
+    relPath,
+    locale: localeMatch ? localeMatch[1] : null,
+    section: sectionMatch ? sectionMatch[1] : null,
+    slug: frontmatter.slug ? String(frontmatter.slug) : null,
+    content: parsed.content,
+  });
+}
+
+const knownRoutes = buildKnownRoutes(allEntries);
+
+// Internal-link validation runs on the assembled body text.
+for (const entry of allEntries) {
+  failures.push(...validateInternalLinks(entry.relPath, entry.content, knownRoutes));
+}
+
+// Slug uniqueness per (locale, section).
+const slugKeys = new Map();
+for (const entry of allEntries) {
+  if (!entry.slug) continue;
+  const key = `${entry.locale}/${entry.section}/${entry.slug}`;
+  if (slugKeys.has(key)) {
+    failures.push(`Duplicate slug '${entry.slug}' in ${key} (${slugKeys.get(key)} and ${entry.relPath})`);
+  } else {
+    slugKeys.set(key, entry.relPath);
+  }
+}
+
+// Locale parity: every path under content/ru must have a counterpart in content/en and vice versa.
+function localePathSet(locale) {
+  return new Set(
+    allEntries
+      .filter((e) => e.locale === locale)
+      .map((e) => e.relPath.replace(/^content\/[a-z]{2}\//, "")),
+  );
+}
+const ruPaths = localePathSet("ru");
+const enPaths = localePathSet("en");
+for (const p of ruPaths) {
+  if (!enPaths.has(p)) {
+    warnings.push(`Locale parity: ${p} exists in content/ru but not content/en`);
+  }
+}
+for (const p of enPaths) {
+  if (!ruPaths.has(p)) {
+    warnings.push(`Locale parity: ${p} exists in content/en but not content/ru`);
+  }
+}
+
+if (warnings.length > 0) {
+  for (const warning of warnings) {
+    console.warn(`  warning: ${warning}`);
+  }
 }
 
 if (failures.length > 0) {

@@ -2,7 +2,7 @@
 title: "Home — DEMO PRO v2"
 description: "DEMO PRO — GitHub CMS static site demo variant 2"
 slug: "home-variant-2"
-date: "2026-05-21"
+date: "2026-08-23"
 author: "GitHub CMS DEMO PRO"
 layout: "home"
 schema_type: "WebSite"

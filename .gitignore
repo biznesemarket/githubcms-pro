@@ -153,3 +153,9 @@ template_plob/
 .kilo/
 .sync-tmp/
 chatGPT_githubcms.md
+
+# Playwright MCP test artifacts
+.playwright-mcp/
+
+# Personal notes
+narabotki/

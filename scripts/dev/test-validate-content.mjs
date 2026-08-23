@@ -246,6 +246,239 @@ Body.
 runValidator(true);
 cleanup();
 
+// Test 11: Unknown block name fails
+console.log("\nTest 11: Unknown block name fails");
+setup();
+writeTestFile("unknown-block.md", `---
+title: "Unknown Block"
+description: "Block name not in registry"
+slug: "unknown-block"
+date: "2026-05-07"
+author: "Test"
+category: "Testing"
+tags: []
+schema_type: "Article"
+layout: "article"
+---
+<!-- @block: magic-ranking -->
+Unsupported content.
+<!-- /@block: magic-ranking -->
+`);
+runValidator(true);
+cleanup();
+
+// Test 12: Unclosed paired block fails (paired syntax used elsewhere)
+console.log("\nTest 12: Unclosed paired block fails");
+setup();
+writeTestFile("unclosed-pair.md", `---
+title: "Unclosed Pair"
+description: "Missing closing marker"
+slug: "unclosed-pair"
+date: "2026-05-07"
+author: "Test"
+category: "Testing"
+tags: []
+schema_type: "Article"
+layout: "article"
+---
+<!-- @block: answer-first -->
+Direct answer.
+
+<!-- @block: cta -->
+Go.
+<!-- /@block: cta -->
+`);
+runValidator(true);
+cleanup();
+
+// Test 13: Legacy open-ended marker warns (build still succeeds)
+console.log("\nTest 13: Legacy open-ended marker accepted");
+setup();
+writeTestFile("legacy-marker.md", `---
+title: "Legacy Marker"
+description: "Open-ended block marker"
+slug: "legacy-marker"
+date: "2026-05-07"
+author: "Test"
+category: "Testing"
+tags: []
+schema_type: "Article"
+layout: "article"
+---
+Body.
+
+<!-- @block: answer-first -->
+Direct answer.
+
+<!-- @block: key-facts -->
+## Facts
+- one
+`);
+runValidator(false);
+cleanup();
+
+// Test 14: raw_html page with <script> fails
+console.log("\nTest 14: raw_html page with <script> fails");
+setup();
+writeTestFile("raw-html-script.md", `---
+title: "Raw Script"
+description: "raw_html with script"
+slug: "raw-html-script"
+date: "2026-05-07"
+author: "Test"
+category: "Testing"
+tags: []
+schema_type: "Article"
+layout: "page"
+raw_html: true
+---
+<section>
+<script>alert("xss")</script>
+<p>Hello</p>
+</section>
+`);
+runValidator(true);
+cleanup();
+
+// Test 15: raw_html page with inline event handler fails
+console.log("\nTest 15: raw_html page with inline event handler fails");
+setup();
+writeTestFile("raw-html-onclick.md", `---
+title: "Raw Onclick"
+description: "raw_html with onclick"
+slug: "raw-html-onclick"
+date: "2026-05-07"
+author: "Test"
+category: "Testing"
+tags: []
+schema_type: "Article"
+layout: "page"
+raw_html: true
+---
+<section>
+<button onclick="run()">Go</button>
+</section>
+`);
+runValidator(true);
+cleanup();
+
+// Test 16: raw_html page with nested <main> fails
+console.log("\nTest 16: raw_html page with nested <main> fails");
+setup();
+writeTestFile("raw-html-main.md", `---
+title: "Raw Main"
+description: "raw_html with nested main"
+slug: "raw-html-main"
+date: "2026-05-07"
+author: "Test"
+category: "Testing"
+tags: []
+schema_type: "Article"
+layout: "page"
+raw_html: true
+---
+<main>
+<p>Content</p>
+</main>
+`);
+runValidator(true);
+cleanup();
+
+// Test 17: valid raw_html page passes
+console.log("\nTest 17: valid raw_html page passes");
+setup();
+writeTestFile("raw-html-valid.md", `---
+title: "Raw Valid"
+description: "clean raw_html"
+slug: "raw-html-valid"
+date: "2026-05-07"
+author: "Test"
+category: "Testing"
+tags: []
+schema_type: "Article"
+layout: "page"
+raw_html: true
+---
+<section class="hero">
+<h1>Hello</h1>
+<p>Safe content</p>
+</section>
+`);
+runValidator(false);
+cleanup();
+
+// Test 18: article body starting with H1 fails
+console.log("\nTest 18: article body starting with H1 fails");
+setup();
+writeTestFile("h1-body.md", `---
+title: "H1 Body"
+description: "Body starts with H1"
+slug: "h1-body"
+date: "2026-05-07"
+author: "Test"
+category: "Testing"
+tags: []
+schema_type: "Article"
+layout: "article"
+---
+# This should be in the title, not the body
+
+Body text continues here.
+`);
+runValidator(true);
+cleanup();
+
+// Test 19: duplicate slug in same section fails
+console.log("\nTest 19: duplicate slug in same section fails");
+setup();
+writeTestFile("dup-slug-a.md", `---
+title: "Duplicate A"
+description: "dup"
+slug: "dup-slug"
+date: "2026-05-07"
+author: "Test"
+category: "Testing"
+tags: []
+schema_type: "Article"
+layout: "article"
+---
+Body A.
+`);
+writeTestFile("dup-slug-b.md", `---
+title: "Duplicate B"
+description: "dup"
+slug: "dup-slug"
+date: "2026-05-07"
+author: "Test"
+category: "Testing"
+tags: []
+schema_type: "Article"
+layout: "article"
+---
+Body B.
+`);
+runValidator(true);
+cleanup();
+
+// Test 20: broken internal link fails
+console.log("\nTest 20: broken internal link fails");
+setup();
+writeTestFile("broken-link.md", `---
+title: "Broken Link"
+description: "href to nonexistent route"
+slug: "broken-link"
+date: "2026-05-07"
+author: "Test"
+category: "Testing"
+tags: []
+schema_type: "Article"
+layout: "article"
+---
+See [missing](/no-such-page/) for details.
+`);
+runValidator(true);
+cleanup();
+
 // Summary
 console.log(`\n=== Results ===`);
 console.log(`Passed: ${passed}`);

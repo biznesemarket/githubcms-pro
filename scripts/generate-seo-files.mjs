@@ -2,33 +2,23 @@ import { mkdirSync, readdirSync, readFileSync, writeFileSync, existsSync } from 
 import path from "node:path";
 import matter from "gray-matter";
 import { slugify } from "./shared/slugify.mjs";
+import { loadProjectEnv } from "./shared/load-env.mjs";
 
-function loadEnvFile(envPath) {
-  if (!existsSync(envPath)) return;
-  const content = readFileSync(envPath, "utf8");
-  for (const line of content.split("\n")) {
-    const trimmed = line.trim();
-    if (!trimmed || trimmed.startsWith("#")) continue;
-    const eqIndex = trimmed.indexOf("=");
-    if (eqIndex === -1) continue;
-    const key = trimmed.slice(0, eqIndex).trim();
-    const value = trimmed.slice(eqIndex + 1).trim();
-    if (!process.env[key]) {
-      process.env[key] = value;
-    }
-  }
-}
-
-loadEnvFile(path.join(process.cwd(), ".env"));
+loadProjectEnv();
 
 const args = process.argv.slice(2);
 const dirIndex = args.indexOf("--dir");
-const outputDir = path.resolve(dirIndex === -1 ? "dist" : args[dirIndex + 1]);
+const rawDir = dirIndex === -1 ? "dist" : args[dirIndex + 1];
+if (!rawDir || rawDir.startsWith("--")) {
+  console.error("Error: --dir requires a directory path argument.");
+  process.exit(1);
+}
+const outputDir = path.resolve(rawDir);
 const locale = process.env.VITE_LOCALE || "ru";
 const edition = process.env.VITE_EDITION || "free";
 const isPro = edition === "pro";
 const contentDir = path.join(process.cwd(), "content", locale, "blog");
-const siteUrl = normalizeSiteUrl(process.env.VITE_SITE_URL || process.env.SITE_URL || "https://githubcms.com");
+const siteUrl = normalizeSiteUrl(process.env.VITE_SITE_URL || process.env.SITE_URL || "http://localhost:5173");
 
 function normalizeSiteUrl(value) {
   return String(value).trim().replace(/\/+$/, "");
@@ -62,7 +52,11 @@ function toLastmod(value) {
 }
 
 function readArticleRoutes() {
-  return readdirSync(contentDir)
+  const contentDir = path.join(process.cwd(), "content", locale, "blog");
+  if (!existsSync(contentDir)) return [];
+
+  const errors = [];
+  const routes = readdirSync(contentDir)
     .filter((file) => file.endsWith(".md"))
     .map((file) => {
       const source = readFileSync(path.join(contentDir, file), "utf8");
@@ -70,7 +64,8 @@ function readArticleRoutes() {
       const slug = String(parsed.data.slug ?? "").trim();
 
       if (!slug) {
-        throw new Error(`Missing slug in ${path.join("content", "blog", file)}`);
+        errors.push(`Missing slug in content/${locale}/blog/${file} — skipped`);
+        return null;
       }
 
       return {
@@ -78,38 +73,74 @@ function readArticleRoutes() {
         lastmod: toLastmod(parsed.data.updated ?? parsed.data.date),
       };
     })
+    .filter(Boolean)
     .sort((a, b) => a.path.localeCompare(b.path));
+
+  if (errors.length) console.warn(`Blog slug warnings:\n  ${errors.join("\n  ")}`);
+  return routes;
 }
 
 function readPageRoutes() {
-  const pagesDir = path.join(contentDir, "..", "pages");
+  // Legacy flat dir: content/{locale}/pages/
+  const pagesDir = path.join(process.cwd(), "content", locale, "pages");
+  // New folder-based structure: content/{locale}/{home,about,contact,...}/
+  const localeDir = path.join(process.cwd(), "content", locale);
 
-  if (!existsSync(pagesDir)) return [];
+  const errors = [];
+  const seenSlugs = new Set();
+  const routes = [];
 
-  return readdirSync(pagesDir)
-    .filter((file) => file.endsWith(".md"))
-    .map((file) => {
+  // Method 1: Legacy flat pages/ dir
+  if (existsSync(pagesDir)) {
+    for (const file of readdirSync(pagesDir).filter((f) => f.endsWith(".md"))) {
       const source = readFileSync(path.join(pagesDir, file), "utf8");
       const parsed = matter(source);
       const slug = String(parsed.data.slug ?? "").trim();
+      if (!slug) { errors.push(`Missing slug in content/${locale}/pages/${file} — skipped`); continue; }
+      if (seenSlugs.has(slug)) continue;
+      seenSlugs.add(slug);
+      routes.push({ path: `/${slug}/`, lastmod: toLastmod(parsed.data.updated ?? parsed.data.date) });
+    }
+  }
 
-      if (!slug) {
-        throw new Error(`Missing slug in ${path.join("content", "pages", file)}`);
+  // Method 2: New folder-based structure — walk subdirs, find index.md + other .md files
+  const skipDirs = new Set(["blog", "pages", "templates"]);
+  if (existsSync(localeDir)) {
+    for (const entry of readdirSync(localeDir, { withFileTypes: true })) {
+      if (!entry.isDirectory() || skipDirs.has(entry.name)) continue;
+      const sectionDir = path.join(localeDir, entry.name);
+      for (const file of readdirSync(sectionDir).filter((f) => f.endsWith(".md"))) {
+        const source = readFileSync(path.join(sectionDir, file), "utf8");
+        const parsed = matter(source);
+        // Skip shop content (product/section/shop layouts) — handled by dedicated shop routes
+        const layout = String(parsed.data.layout ?? "");
+        if (["product", "section", "shop"].includes(layout)) continue;
+        const slug = String(parsed.data.slug ?? "").trim();
+        if (!slug) { errors.push(`Missing slug in content/${locale}/${entry.name}/${file} — skipped`); continue; }
+        if (seenSlugs.has(slug)) continue;
+        seenSlugs.add(slug);
+        // For index.md, the slug IS the folder name (e.g., about, contact)
+        // Use the slug from frontmatter — it's already correct
+        const routePath = file === "index.md" ? `/${slug}/` : `/${slug}/`;
+        routes.push({ path: routePath, lastmod: toLastmod(parsed.data.updated ?? parsed.data.date) });
       }
+    }
+  }
 
-      return {
-        path: `/${slug}/`,
-        lastmod: toLastmod(parsed.data.updated ?? parsed.data.date),
-      };
-    })
-    .sort((a, b) => a.path.localeCompare(b.path));
+  if (errors.length) console.warn(`Page slug warnings:\n  ${errors.join("\n  ")}`);
+  return routes.sort((a, b) => a.path.localeCompare(b.path));
 }
 
 function renderSitemap(routes) {
   const urls = routes
     .map((route) => {
       const lastmod = route.lastmod ? `\n    <lastmod>${xmlEscape(route.lastmod)}</lastmod>` : "";
-      return `  <url>\n    <loc>${xmlEscape(absoluteUrl(route.path))}</loc>${lastmod}\n  </url>`;
+      const isBlog = route.path.startsWith("/blog/") && !route.path.startsWith("/blog/page/");
+      const isPaginated = route.path.includes("/page/");
+      // Blog articles: weekly, high priority. Pages: monthly. Pagination: daily, low.
+      const changefreq = isBlog ? "weekly" : isPaginated ? "daily" : "monthly";
+      const priority = isBlog ? "0.8" : isPaginated ? "0.4" : route.path === "/" ? "1.0" : "0.6";
+      return `  <url>\n    <loc>${xmlEscape(absoluteUrl(route.path))}</loc>${lastmod}\n    <changefreq>${changefreq}</changefreq>\n    <priority>${priority}</priority>\n  </url>`;
     })
     .join("\n");
 
@@ -174,18 +205,23 @@ const routes = [
   ...readTagRoutes(),
   ...readPaginationRoutes(),
   ...(isPro ? [
-  // Shop routes
+  // ⚠️ Shop routes must match src/routes.ts + scripts/inject-seo.mjs product slugs.
+  // Shop sections
   { path: "/shop/", lastmod: undefined },
   ...["shop-section-1","shop-section-2","shop-section-3","shop-section-4","shop-section-5"].flatMap(s => [
     { path: `/shop/${s}/`, lastmod: undefined },
   ]),
   // Product detail pages
-  { path: "/shop/shop-section-1/galaxy-s25-ultra/", lastmod: undefined },
-  { path: "/shop/shop-section-1/macbook-air-m4/", lastmod: undefined },
-  { path: "/shop/shop-section-1/ipad-pro-m4/", lastmod: undefined },
-  { path: "/shop/shop-section-1/airpods-pro-3/", lastmod: undefined },
-  { path: "/shop/shop-section-1/watch-ultra-2/", lastmod: undefined },
-  { path: "/shop/shop-section-1/power-bank-20000/", lastmod: undefined },
+  ...["shop-section-1","shop-section-2","shop-section-3","shop-section-4","shop-section-5"].flatMap((s, i) => {
+    const slugs = [
+      "galaxy-s25-ultra", "macbook-air-m4", "ipad-pro-m4", "airpods-pro-3", "watch-ultra-2", "power-bank-20000",
+      "lg-side-by-side", "bosch-washing", "xiaomi-x10", "samsung-microwave", "electrolux-stove", "bosch-dishwasher",
+      "sofa-milan", "table-loft", "ergo-chair", "wardrobe-premium", "bed-oslo", "dresser-scandi",
+      "kettler-tr1", "trek-bike", "salomon-tent", "nike-zoom", "protein-on", "garmin-venu",
+      "svetocopy-paper", "parker-jotter", "desk-organizer", "hp-laserjet", "epson-projector", "rexel-shredder",
+    ];
+    return slugs.slice(i * 6, i * 6 + 6).map(slug => ({ path: `/shop/${s}/${slug}/`, lastmod: undefined }));
+  }),
   // Payment
   { path: "/payment/success/", lastmod: undefined },
   ] : []),

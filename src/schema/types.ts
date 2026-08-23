@@ -1,4 +1,4 @@
-import type { Article } from "../content/articles"
+import type { Article } from "../content/articles.ts"
 
 export type JsonLd = Record<string, unknown>
 

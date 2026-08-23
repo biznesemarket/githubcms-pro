@@ -1,11 +1,15 @@
 import matter from "gray-matter";
-import MarkdownIt from "markdown-it";
-import sanitizeHtml from "sanitize-html";
-import hljs from "highlight.js";
+import {
+  parseBlocks,
+  extractFaq,
+  renderMarkdown,
+} from "../markdown/blocks.mjs";
+import type {
+  MarkdownBlock,
+  FaqItem as BlocksFaqItem,
+} from "../markdown/blocks.mjs";
 
-export interface MarkdownBlocks {
-  [name: string]: string;
-}
+export type { MarkdownBlock };
 
 export interface FaqItem {
   question: string;
@@ -15,94 +19,14 @@ export interface FaqItem {
 export interface MarkdownResult {
   frontmatter: Record<string, unknown>;
   html: string;
-  blocks: MarkdownBlocks;
-  faqItems: FaqItem[];
+  blocks: Record<string, MarkdownBlock>;
+  faqItems: BlocksFaqItem[];
   readingTime: number;
 }
 
-const markdown = new MarkdownIt({
-  html: true,
-  linkify: true,
-  typographer: true,
-  highlight(str, lang) {
-    if (lang && hljs.getLanguage(lang)) {
-      try {
-        return hljs.highlight(str, { language: lang }).value;
-      } catch {}
-    }
-    // Return escaped source instead of empty string for unknown languages
-    return markdown.utils.escapeHtml(str);
-  },
-});
-
-const sanitizerOptions: sanitizeHtml.IOptions = {
-  allowedTags: sanitizeHtml.defaults.allowedTags.concat(["img", "section", "article"]),
-  allowedAttributes: {
-    ...sanitizeHtml.defaults.allowedAttributes,
-    a: ["href", "name", "target", "rel"],
-    img: ["src", "alt", "width", "height", "loading"],
-    "*": ["id", "class", "style"],
-  },
-  allowedStyles: {
-    "*": {
-      background: [/.*/], "background-color": [/.*/], "background-image": [/.*/],
-      color: [/.*/], opacity: [/.*/], "font-size": [/.*/], "font-weight": [/.*/],
-      width: [/.*/], height: [/.*/], "min-height": [/.*/], "min-width": [/.*/],
-      "max-width": [/.*/], "max-height": [/.*/], padding: [/.*/], "padding-top": [/.*/],
-      "padding-right": [/.*/], "padding-bottom": [/.*/], "padding-left": [/.*/],
-      margin: [/.*/], "margin-top": [/.*/], "margin-right": [/.*/], "margin-bottom": [/.*/],
-      "margin-left": [/.*/], border: [/.*/], "border-radius": [/.*/],
-      "border-top": [/.*/], "border-left": [/.*/], "border-right": [/.*/], "border-bottom": [/.*/],
-      display: [/.*/], flex: [/.*/], "flex-wrap": [/.*/], "flex-direction": [/.*/],
-      "align-items": [/.*/], "justify-content": [/.*/], gap: [/.*/],
-      position: [/.*/], top: [/.*/], left: [/.*/], right: [/.*/], bottom: [/.*/],
-      "z-index": [/.*/], overflow: [/.*/], "object-fit": [/.*/], "object-position": [/.*/],
-      "box-shadow": [/.*/], "text-align": [/.*/], "text-transform": [/.*/], "text-decoration": [/.*/],
-      "letter-spacing": [/.*/], "line-height": [/.*/], transition: [/.*/],
-      transform: [/.*/], "backdrop-filter": [/.*/], cursor: [/.*/],
-      "-webkit-background-clip": [/.*/], "-webkit-text-fill-color": [/.*/],
-    },
-  },
-};
-
-function extractBlocks(rawContent: string): MarkdownBlocks {
-  const blocks: MarkdownBlocks = {};
-  const markerRegex = /<!--\s*@block:\s*(\S+)\s*-->/g;
-  const parts = rawContent.split(markerRegex);
-
-  for (let i = 1; i < parts.length; i += 2) {
-    const name = parts[i];
-    const content = (parts[i + 1] ?? "").trim();
-    if (!content) {
-      blocks[name] = "";
-      continue;
-    }
-    const rendered = markdown.render(content);
-    blocks[name] = sanitizeHtml(rendered, sanitizerOptions);
-  }
-
-  return blocks;
-}
-
-function extractFaq(body: string): FaqItem[] {
-  const items: FaqItem[] = [];
-  const faqBlock = body.match(/(?:###?\s*FAQ|<!--\s*@block:\s*faq\s*-->)([\s\S]*?)(?=###\s|<!--\s*@block:|$)/i);
-
-  if (!faqBlock) return items;
-
-  const faqContent = faqBlock[1] || "";
-  const qaRegex = /\*\*Q:\s*(.+?)\*\*\s*([\s\S]*?)(?=\*\*Q:\s*|$)/gi;
-  let match;
-
-  while ((match = qaRegex.exec(faqContent)) !== null) {
-    items.push({
-      question: match[1].trim(),
-      answer: match[2].replace(/^\s*\*\*A:\s*\*\*?\s*/i, "").trim(),
-    });
-  }
-
-  return items;
-}
+// MarkdownIt config, sanitizer options, extractBlocks and extractFaq live in
+// src/markdown/blocks.mjs (single source of truth). This composable is a thin
+// wrapper for runtime consumers.
 
 function computeReadingTime(text: string): number {
   const wordCount = text.split(/\s+/).filter(Boolean).length;
@@ -111,22 +35,22 @@ function computeReadingTime(text: string): number {
 
 export function useMarkdown(raw: string): MarkdownResult {
   const parsed = matter(raw);
-  const body = parsed.content;
 
-  const blocks = extractBlocks(body);
-  const bodyWithoutBlocks = body.replace(/<!--\s*@block:\s*\S+\s*-->/g, "");
+  const result = parseBlocks(parsed.content);
 
-  const unsafeHtml = markdown.render(bodyWithoutBlocks);
-  const html = sanitizeHtml(unsafeHtml, sanitizerOptions);
+  const blocks: Record<string, MarkdownBlock> = {};
+  for (const block of result.blocks) {
+    blocks[block.name] = block;
+  }
 
-  const faqItems = extractFaq(bodyWithoutBlocks);
-  const readingTime = computeReadingTime(bodyWithoutBlocks);
+  const faqBlock = result.blocks.find((b) => b.name === "faq");
+  const faqItems = extractFaq(faqBlock?.markdown);
 
   return {
     frontmatter: parsed.data,
-    html,
+    html: renderMarkdown(result.body),
     blocks,
     faqItems,
-    readingTime,
+    readingTime: computeReadingTime(result.body),
   };
 }

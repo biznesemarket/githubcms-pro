@@ -3,24 +3,38 @@ import { computed } from "vue"
 import { useSeo } from "../composables/useSeo"
 import { siteConfig } from "../site.config"
 import { generateSchema } from "../schema"
-import { products as allProducts } from "../content/products"
-import { translateProductName } from "../content/products"
+import { pages } from "../content/pages"
 import BreadcrumbNav from "../components/BreadcrumbNav.vue"
 import ImageSlider from "../components/ImageSlider.vue"
 import { t } from "../i18n"
-import { locale } from "../i18n"
-import { productEn } from "../content/product-en"
 import { loadTinkoffScript, openPayment } from "../composables/usePayment"
 
 const props = defineProps<{ section: string; slug: string }>()
 
 const product = computed(() => {
-  const p = allProducts.find(p => p.sectionId === Number(props.section) && p.slug === props.slug)
+  const p = (pages as any).find((p: any) => p.frontmatter?.layout === "product" && p.frontmatter?.slug === props.slug)
   if (!p) return undefined
-  if (locale !== "en") return p
-  const en = productEn[p.slug]
-  if (!en) return p
-  return { ...p, name: en.name, desc: en.desc, ldesc: en.ldesc, specs: en.specs as any, faq: en.faq as any, revs: en.revs.map((r: any) => ({ author: r.a, r: r.r, text: r.t, date: r.d })) as any }
+  const fm = p.frontmatter || {}
+  return {
+    id: fm.id || "",
+    slug: fm.slug,
+    name: fm.title || "",
+    origin: fm.origin || "",
+    sectionSlug: fm.section || "",
+    sectionTitle: fm.section_title || "",
+    templateStyle: fm.template_style || 1,
+    price: fm.price || 0,
+    img: fm.image || "",
+    desc: fm.description || "",
+    ldesc: p.html || "",
+    cat: fm.category || "",
+    tags: fm.tags || [],
+    specs: fm.specs || [],
+    bens: fm.benefits || [],
+    htu: fm.howto || [],
+    faq: fm.faq || [],
+    revs: (fm.reviews || []).map((r: any) => ({ author: r.author, r: r.rating, text: r.text, date: r.date })),
+  }
 })
 const productName = computed(() => product.value?.name || "")
 const stars = (n: number) => '★'.repeat(n) + '☆'.repeat(5 - n)
@@ -32,8 +46,8 @@ function variantImages(img: string): string[] {
   const [_, dims, base] = m;
   return [
     img,
-    `https://pixinlink.ru/api/v1/${dims}/${base}-вид-справа`,
-    `https://pixinlink.ru/api/v1/${dims}/${base}-вид-слева`,
+    `https://pixinlink.ru/api/v1/${dims}/${base}-right-view`,
+    `https://pixinlink.ru/api/v1/${dims}/${base}-left-view`,
   ];
 }
 
@@ -53,9 +67,9 @@ useSeo(() => {
   const jsonLd = generateSchema({
     url: new URL(path, siteConfig.url).toString(), path, title: p.name, description: p.desc, html: "", type: "product", image: p.img,
     product: { id: p.id, name: p.name, price: p.price, currency: "RUB", image: p.img, description: p.ldesc,
-      specs: p.specs.map(s => ({ name: s.n, value: s.v })),
-      reviews: p.revs?.map(r => ({ author: r.author, rating: r.r, text: r.text, date: r.date })),
-      faq: p.faq?.map(f => ({ question: f.q, answer: f.a })),
+      specs: p.specs.map((s: { n: string; v: string }) => ({ name: s.n, value: s.v })),
+      reviews: p.revs?.map((r: { author: string; r: number; text: string; date: string }) => ({ author: r.author, rating: r.r, text: r.text, date: r.date })),
+      faq: p.faq?.map((f: { q: string; a: string }) => ({ question: f.q, answer: f.a })),
     },
   })
   return { title: p.name + ' | ' + siteConfig.name, description: p.desc, path, type: 'website', image: p.img, jsonLd }
@@ -93,7 +107,7 @@ function buyProduct() {
         <div class="hero-inner" :class="'hero-layout-' + product.templateStyle">
           <div class="hero-image"><ImageSlider :images="productImages" :alt="product.name" /></div>
           <div class="hero-info">
-            <p class="hero-sku">{{ t.shop.sku }} {{ product.id }}</p>
+            <p class="hero-sku">{{ t.shop.sku }} {{ product.id }}<span v-if="product.origin"> · {{ t.countryOfOrigin }}: {{ product.origin }}</span></p>
             <h1 class="hero-name">{{ productName }}</h1>
             <p class="hero-desc">{{ isStyle(5) ? product.desc : product.ldesc }}</p>
             <div class="hero-price-row">
@@ -164,6 +178,44 @@ function buyProduct() {
 
     <!-- Delivery compact for styles 2,5 -->
     <section v-if="isStyle(2)||isStyle(5)" class="delivery-compact bg-style-2"><div class="container"><div class="d-flex flex-wrap justify-content-center gap-4 text-center" style="font-size:13px"><div>🚚 {{ t.shop.deliveryCompact }}</div><div>💳 {{ t.shop.paymentCompact }}</div><div>🔄 {{ t.shop.returnCompact }}</div></div></div></section>
+
+    <!-- SHOP INFO: Delivery / Returns / Security -->
+    <section class="shop-info-section bg-style-2 py-4">
+      <div class="container">
+        <div class="row g-4">
+          <div class="col-lg-4">
+            <div class="shop-info-card">
+              <h5>🚚 {{ t.shop.delivery }}</h5>
+              <p>{{ t.deliveryFull }}</p>
+            </div>
+          </div>
+          <div class="col-lg-4">
+            <div class="shop-info-card">
+              <h5>🔄 {{ t.shop.return }}</h5>
+              <p>{{ t.returnFull }}</p>
+              <p class="shop-info-steps">{{ t.returnSteps }}</p>
+            </div>
+          </div>
+          <div class="col-lg-4">
+            <div class="shop-info-card">
+              <h5>🔒 {{ t.securityTitle }}</h5>
+              <p>{{ t.securityDesc }} <RouterLink to="/privacy/" style="color:var(--color-accent)">{{ t.footer.privacy }}</RouterLink>.</p>
+              <p class="shop-info-steps">{{ t.exportNotice }}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Legal footer strip -->
+    <section class="shop-legal-strip">
+      <div class="container">
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+          <span class="shop-legal-text">{{ t.shopLegal }}</span>
+          <RouterLink to="/contact/" class="shop-legal-link">{{ t.shopSupport }}</RouterLink>
+        </div>
+      </div>
+    </section>
 
     <!-- CTA -->
     <section class="cta-section" :class="'cta-style-' + product.templateStyle">
@@ -255,4 +307,12 @@ function buyProduct() {
   .faq-grid { grid-template-columns: 1fr; }
   .cta-inner { flex-direction: column; text-align: center; }
 }
+.shop-info-card { padding: 20px; border-radius: 12px; background: var(--color-surface); border: 1px solid var(--color-border); height: 100%; }
+.shop-info-card h5 { font-size: 15px; margin: 0 0 8px; }
+.shop-info-card p { font-size: 13px; color: var(--color-text-muted); line-height: 1.6; margin: 0; }
+.shop-info-steps { font-size: 12px !important; color: var(--color-text-muted); margin-top: 10px !important; padding-top: 10px; border-top: 1px dashed var(--color-border); }
+.shop-legal-strip { padding: 12px 0; background: var(--color-bg-muted); border-top: 1px solid var(--color-border); font-size: 12px; }
+.shop-legal-text { color: var(--color-text-muted); }
+.shop-legal-link { color: var(--color-accent); text-decoration: none; font-weight: 600; white-space: nowrap; }
+.shop-legal-link:hover { text-decoration: underline; }
 </style>

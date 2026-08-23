@@ -1,5 +1,5 @@
-import type { JsonLd, PageContext, Detector } from "../types"
-import * as lib from "../library"
+import type { JsonLd, PageContext, Detector } from "../types.ts"
+import * as lib from "../library.ts"
 
 // ─── DETECTOR: FAQ ───
 export const faqDetector: Detector = {
@@ -57,7 +57,7 @@ export const howtoDetector: Detector = {
     const stepCardRegex = /<div[^>]*class="[^"]*step-number[^"]*"[^>]*>([^<]+)<\/div>\s*(?:<h[34][^>]*>([^<]+)<\/h[34]>\s*)?<p[^>]*>([^<]+)<\/p>/gi
     let m: RegExpExecArray | null
     while ((m = stepCardRegex.exec(html)) !== null) {
-      const name = m[2]?.trim() || `Шаг ${m[1].trim()}`
+      const name = m[2]?.trim() || `Step ${m[1].trim()}`
       steps.push({ name, text: m[3].trim() })
     }
 

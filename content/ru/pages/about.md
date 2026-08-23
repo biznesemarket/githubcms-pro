@@ -2,7 +2,7 @@
 title: "О проекте — DEMO PRO"
 description: "DEMO PRO demonstration page. GitHub CMS — static site generator."
 slug: "about"
-date: "2026-05-21"
+date: "2026-08-23"
 author: "GitHub CMS DEMO PRO"
 layout: "page"
 schema_type: "AboutPage"
